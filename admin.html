@@ -1172,7 +1172,32 @@ function saveExam(){
   }
 
   saveData(DATA);
-  toast('Examen guardado correctamente','success');
+  toast('Examen guardado localmente, sincronizando...', 'success');
+
+  // Sincronizar a Supabase
+  if(DATA.supabase && DATA.supabase.url && DATA.supabase.key) {
+    const tableUrl = DATA.supabase.url.replace(/\/$/, '') + '/rest/v1/pln_exams_data';
+    fetch(tableUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': DATA.supabase.key,
+        'Authorization': 'Bearer ' + DATA.supabase.key,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ id: 1, data: DATA })
+    }).catch(e => console.error('Supabase error', e));
+  }
+
+  // Sincronizar a Google Sheets
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbxwsRdtbrPPHVRl34OoBOy707xWB-SOgfA-hPxjMSyrVcMUvYgWhUmSj5qIqsDS_YJ6/exec";
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'saveExams', data: DATA })
+  }).catch(e => console.error('Sheets error', e));
+
   showView('dashboard');
 }
 window.saveExam = saveExam;

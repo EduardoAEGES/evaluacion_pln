@@ -495,35 +495,48 @@
   }
 
   function loadQuestions(){
-    // Try localStorage first
-    if(loadDefaultExam()) return;
-
-    // Fallback to Google Sheets
-    if(!SHEET_URL || SHEET_URL.indexOf('PEGA_AQUI') === 0){
-      loadState.textContent = '⚠️ Configura SHEET_URL o crea un examen desde el panel de administración.';
-      loadState.style.color = 'var(--warn)';
-      return;
+    if(SHEET_URL && SHEET_URL.indexOf('PEGA_AQUI') < 0){
+      fetch(SHEET_URL, { method:'GET' })
+        .then(r => r.json())
+        .then(res => {
+          if(res.ok && res.data && res.data.exams){
+            // Sincronizar caché local con la nube
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
+            if(loadDefaultExam()){
+              loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas cargadas desde la nube.';
+              loadState.style.color = 'var(--ok)';
+            }
+          } else if(res.ok && res.questions) {
+            // Fallback modo antiguo
+            QUESTIONS = res.questions;
+            TOTAL = 15 * 60;
+            left = TOTAL;
+            questionsReady = true;
+            renderQuestions();
+            loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas (Sheets Legacy).';
+            loadState.style.color = 'var(--ok)';
+            timeEl.textContent = fmt(left);
+          } else {
+            fallbackLocal();
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching cloud exam:', err);
+          fallbackLocal();
+        });
+    } else {
+      fallbackLocal();
     }
-    fetch(SHEET_URL, { method:'GET' })
-      .then(r => r.json())
-      .then(data => {
-        if(!data.ok || !data.questions || !data.questions.length){
-          throw new Error(data.error || 'Sin preguntas');
-        }
-        QUESTIONS = data.questions;
-        TOTAL = 15 * 60; // 15 minutes default from Sheets
-        left = TOTAL;
-        questionsReady = true;
-        renderQuestions();
-        loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas listas (Google Sheets).';
-        loadState.style.color = 'var(--ok)';
-        timeEl.textContent = fmt(left);
-      })
-      .catch(err => {
-        loadState.textContent = '⚠️ No se pudieron cargar las preguntas. Crea un examen desde el panel admin.';
-        loadState.style.color = 'var(--danger)';
-        console.error(err);
-      });
+  }
+
+  function fallbackLocal(){
+    if(loadDefaultExam()){
+      loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas cargadas (Caché local).';
+      loadState.style.color = 'var(--ok)';
+    } else {
+      loadState.textContent = '⚠️ Configura SHEET_URL o crea un examen en el panel admin.';
+      loadState.style.color = 'var(--warn)';
+    }
   }
 
   // =====================================================================
