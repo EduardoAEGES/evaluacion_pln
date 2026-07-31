@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Examen - Pensamiento Lógico de Negocios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- KaTeX for LaTeX equations -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<style>
+  :root{
+    --bg:#f8fafc;
+    --card:#ffffff;
+    --card2:#f1f5f9;
+    --accent:#0094d9;
+    --accent2:#002752;
+    --ok:#16a34a;
+    --warn:#d97706;
+    --danger:#dc2626;
+    --text:#0f172a;
+    --muted:#64748b;
+    --ring:#e2e8f0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:#f1f5f9;
+    color:var(--text);
+    min-height:100vh;
+    padding:24px;
+  }
+  .wrap{max-width:840px;margin:0 auto}
+
+  /* ---------- Timer ---------- */
+  .timerbar{
+    position:sticky;
+    top:12px;
+    z-index:50;
+    display:flex;
+    justify-content:flex-start;
+    margin-bottom:20px;
+    pointer-events:none;
+  }
+  .timer{
+    pointer-events:auto;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    background:var(--card);
+    border:1px solid var(--ring);
+    padding:12px 18px 12px 12px;
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  .ring{position:relative;width:64px;height:64px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .track{stroke:var(--ring);}
+  .ring .progress{
+    stroke:url(#grad);
+    stroke-linecap:round;
+    transition:stroke-dashoffset .3s linear,stroke .4s ease;
+  }
+  .ring .label{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;
+  }
+  .timer .meta{display:flex;flex-direction:column;line-height:1.2}
+  .timer .meta b{font-size:13px}
+  .timer .meta span{font-size:11px;color:var(--muted)}
+  .pulse .ring{animation:pulse .9s infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  .flash{animation:flash 1s infinite}
+  @keyframes flash{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ---------- Content ---------- */
+  header.exam{
+    background:var(--card);
+    border:1px solid var(--ring);
+    border-radius:16px;
+    padding:22px 24px;
+    margin-bottom:20px;
+  }
+  header.exam h1{margin:0 0 6px;font-size:22px}
+  header.exam p{margin:0;color:var(--muted);font-size:14px}
+
+  .q{
+    background:var(--card);
+    border:1px solid var(--ring);
+    border-radius:16px;
+    padding:20px 22px;
+    margin-bottom:16px;
+  }
+  .q h3{margin:0 0 14px;font-size:16px;display:flex;gap:10px}
+  .q h3 .num{
+    background:var(--accent2);color:#ffffff;font-weight:800;
+    min-width:26px;height:26px;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;font-size:14px;
+  }
+  .q .qdesc{
+    margin:-6px 0 14px 36px;color:var(--muted);font-size:14px;line-height:1.4;
+  }
+  .q .q-image{
+    margin:0 0 14px 36px;border-radius:10px;
+    border:1px solid var(--ring);overflow:hidden;
+    display:inline-block;
+  }
+  .q .q-image img{width:100%;display:block}
+  .q .q-latex{
+    margin:0 0 14px 36px;padding:10px 16px;
+    background:var(--card2);border:1px solid var(--ring);border-radius:10px;
+    font-size:18px;display:inline-block;
+  }
+  .opt{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 14px;border:1px solid var(--ring);
+    border-radius:10px;margin-bottom:8px;cursor:pointer;
+    background:var(--card2);transition:.15s;
+  }
+  .opt:hover{border-color:var(--accent);transform:translateX(2px)}
+  .opt input{accent-color:var(--accent);width:17px;height:17px;flex-shrink:0;}
+  .opt.sel{border-color:var(--accent);background:rgba(0,148,217,.1)}
+  .opt-img{
+    max-height:80px;border-radius:6px;border:1px solid var(--ring);
+    background:#fff;margin-left:auto;object-fit:contain;
+  }
+  .opt-text{flex:1;word-break:break-word;}
+  
+  .input-fill, .input-dropdown{
+    width:100%;max-width:400px;padding:12px;
+    background:var(--card2);border:1px solid var(--ring);
+    border-radius:10px;color:var(--text);font-size:15px;font-family:inherit;
+  }
+  .input-fill:focus, .input-dropdown:focus{outline:2px solid var(--accent);border-color:transparent;}
+
+  .match-table {
+    width: 100%; border-collapse: collapse;
+    margin-top: 10px; background: var(--bg);
+    border-radius: 8px; overflow: hidden;
+    box-shadow: 0 0 0 1px var(--ring);
+  }
+  .match-table td {
+    padding: 12px; border-bottom: 1px solid var(--ring);
+  }
+  .match-table tr:last-child td { border-bottom: none; }
+  .match-table tr:nth-child(even) { background: var(--card2); }
+  .match-table td:first-child { font-weight: 500; width: 60%; }
+  .match-table select {
+    width: 100%; padding: 8px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--ring); color: var(--text); font-family: inherit;
+  }
+  
+  textarea.input-text{
+    width:100%;min-height:120px;resize:vertical;
+    background:var(--card2);border:1px solid var(--ring);
+    border-radius:10px;color:var(--text);padding:12px;font-size:15px;
+    font-family:inherit;
+  }
+  textarea.input-text:focus,.opt:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+
+  .actions{display:flex;gap:12px;margin-top:8px}
+  button.submit{
+    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    color:#ffffff;font-weight:800;border:0;border-radius:12px;
+    padding:14px 26px;font-size:15px;cursor:pointer;transition:.15s;
+  }
+  button.submit:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  button.submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  .result{
+    display:none;background:var(--card);border:1px solid var(--ring);
+    border-radius:16px;padding:24px;margin-top:16px;text-align:center;
+  }
+  .result.show{display:block;animation:rise .4s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .score{font-size:40px;font-weight:800;margin:6px 0}
+  .badge{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13px}
+
+  .locked{opacity:.6;pointer-events:none;filter:grayscale(.3)}
+
+  /* ---------- Login ---------- */
+  .login{
+    max-width:440px;margin:8vh auto 0;
+    background:var(--card);border:1px solid var(--ring);
+    border-radius:20px;padding:34px 30px;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+    text-align:center;animation:rise .4s ease;
+  }
+  .login .logo{
+    width:64px;height:64px;margin:0 auto 16px;border-radius:16px;
+    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+    box-shadow:0 6px 20px rgba(0,39,82,.2);
+    color: #fff;
+  }
+  .login h2{margin:0 0 4px;font-size:22px}
+  .login p.login-sub{margin:0 0 22px;color:var(--muted);font-size:13px}
+  .field{text-align:left;margin-bottom:14px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .field input{
+    width:100%;background:var(--card2);border:1px solid var(--ring);
+    border-radius:10px;color:var(--text);padding:12px;font-size:14px;font-family:inherit;
+    transition:.15s;
+  }
+  .field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+  .field-pass-wrap{position:relative}
+  .field-pass-wrap input{padding-right:44px}
+  .toggle-pass{
+    position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    width:36px;height:36px;border:none;border-radius:8px;
+    background:transparent;color:var(--muted);font-size:18px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:.15s;
+  }
+  .toggle-pass:hover{color:var(--accent);background:rgba(56,189,248,.08)}
+  .login .err{color:var(--danger);font-size:12px;min-height:16px;margin:2px 0 10px}
+  .login button.login-btn{
+    width:100%;background:linear-gradient(135deg,var(--accent2),var(--accent));
+    color:#ffffff;font-weight:800;border:0;border-radius:12px;
+    padding:14px;font-size:15px;cursor:pointer;transition:.15s;
+    font-family:inherit;
+  }
+  .login button.login-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+
+  /* Role toggle */
+  .role-toggle{
+    display:flex;
+    background:var(--card2);
+    border:1px solid var(--ring);
+    border-radius:12px;
+    margin-bottom:24px;
+    overflow:hidden;
+    position:relative;
+  }
+  .role-toggle button{
+    flex:1;padding:11px 16px;border:none;
+    background:transparent;color:var(--muted);
+    font-size:13px;font-weight:700;cursor:pointer;
+    font-family:inherit;transition:.2s;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    position:relative;z-index:1;
+  }
+  .role-toggle button.active{color:#ffffff}
+  .role-toggle .slider{
+    position:absolute;top:3px;bottom:3px;
+    width:calc(50% - 3px);left:3px;
+    background:linear-gradient(135deg,var(--accent2),var(--accent));
+    border-radius:10px;
+    transition:left .3s cubic-bezier(.4,0,.2,1);
+    z-index:0;
+  }
+  .role-toggle .slider.right{left:calc(50%)}
+
+  #examArea{display:none}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div class="login" id="loginScreen">
+  <div class="logo">📝</div>
+  <h2>Examen de PLN</h2>
+  <p class="login-sub" id="loginSubtitle">Ingresa tus datos para comenzar la evaluación</p>
+
+  <!-- Role Toggle -->
+  <div class="role-toggle">
+    <div class="slider" id="roleSlider"></div>
+    <button class="active" id="btnStudent" onclick="switchRole('student')">🎓 Estudiante</button>
+    <button id="btnAdmin" onclick="switchRole('admin')">🔐 Administrador</button>
+  </div>
+
+  <!-- Student Login Form -->
+  <form id="loginForm">
+    <div class="field" id="fieldNombres">
+      <label for="li-nombres">Nombres</label>
+      <input type="text" id="li-nombres" placeholder="Ej: María José" required>
+    </div>
+    <div class="field" id="fieldApellidos">
+      <label for="li-apellidos">Apellidos</label>
+      <input type="text" id="li-apellidos" placeholder="Ej: Pérez García" required>
+    </div>
+    <div class="field" id="fieldNRC">
+      <label for="li-nrc">NRC</label>
+      <input type="text" id="li-nrc" placeholder="Ej: 12345" inputmode="numeric" required>
+    </div>
+
+    <!-- Admin Login Fields (hidden by default) -->
+    <div class="field" id="fieldUser" style="display:none">
+      <label for="li-user">Usuario</label>
+      <input type="text" id="li-user" placeholder="admin">
+    </div>
+    <div class="field" id="fieldPass" style="display:none">
+      <label for="li-pass">Contraseña</label>
+      <div class="field-pass-wrap">
+        <input type="password" id="li-pass" placeholder="••••••••">
+        <button type="button" class="toggle-pass" onclick="togglePassword()" title="Mostrar/ocultar contraseña">👁</button>
+      </div>
+    </div>
+
+    <div class="err" id="loginErr"></div>
+    <button type="submit" class="login-btn" id="startBtn">Iniciar evaluación ▸</button>
+    <p id="loadState" style="color:var(--muted);font-size:12px;margin:12px 0 0">Cargando preguntas…</p>
+  </form>
+</div>
+
+<!-- ===== EXAMEN ===== -->
+<div id="examArea">
+<div class="wrap">
+
+  <!-- ===== TEMPORIZADOR ===== -->
+  <div class="timerbar">
+    <div class="timer" id="timerBox">
+      <div class="ring">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0094d9"/>
+              <stop offset="100%" stop-color="#002752"/>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="32" cy="32" r="28" fill="none" stroke-width="6"/>
+          <circle class="progress" id="ring" cx="32" cy="32" r="28" fill="none" stroke-width="6"
+                  stroke-dasharray="175.93" stroke-dashoffset="0"/>
+        </svg>
+        <div class="label" id="time">2:00</div>
+      </div>
+      <div class="meta">
+        <b>Tiempo restante</b>
+        <span id="status">Examen en curso</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ENCABEZADO ===== -->
+  <header class="exam" style="position:relative;">
+    <button id="closePreviewBtn" style="display:none; position:absolute; top:20px; right:20px; background:var(--danger); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:13px; z-index:10;" onclick="exitExam()">✕ Cerrar Vista Previa</button>
+    <h1 id="examTitle">Examen · Pensamiento Lógico de Negocios</h1>
+    <p>Responde todas las preguntas antes de que finalice el tiempo. El examen se enviará automáticamente al agotarse el temporizador.</p>
+  </header>
+
+  <!-- ===== FORMULARIO ===== -->
+  <form id="examForm">
+    <input type="hidden" name="nombres">
+    <input type="hidden" name="apellidos">
+    <input type="hidden" name="nrc">
+
+    <!-- Las preguntas se cargan dinámicamente -->
+    <div id="questions"></div>
+
+    <div class="actions">
+      <button type="submit" class="submit" id="submitBtn">Enviar examen</button>
+    </div>
+  </form>
+
+  <!-- ===== RESULTADO ===== -->
+  <div class="result" id="result">
+    <div id="badge" class="badge"></div>
+    <div class="score" id="scoreTxt"></div>
+    <p id="detailTxt" style="color:var(--muted);margin:0 0 20px"></p>
+    <button onclick="exitExam()" style="padding:12px 24px; font-weight:bold; cursor:pointer; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:16px;">Salir al Menú Principal</button>
+  </div>
+
+</div>
+</div><!-- /#examArea -->
+
+<script>
+(function(){
+  // ⬇⬇⬇ PEGA AQUÍ LA URL DE TU WEB APP DE GOOGLE APPS SCRIPT ⬇⬇⬇
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbxwsRdtbrPPHVRl34OoBOy707xWB-SOgfA-hPxjMSyrVcMUvYgWhUmSj5qIqsDS_YJ6/exec"
+  const STORAGE_KEY = 'pln_exams';
+  const R = 28;
+  const CIRC = 2 * Math.PI * R;    // 175.93
+  let TOTAL = 15;                   // default seconds — will be set by exam config
+  let left = TOTAL;
+  let finished = false;
+  let currentRole = 'student';
+  let examName = 'Examen · PLN';
+  let supabaseConfig = null;
+
+  const ring       = document.getElementById('ring');
+  const timeEl     = document.getElementById('time');
+  const statusEl   = document.getElementById('status');
+  const box        = document.getElementById('timerBox');
+  const form       = document.getElementById('examForm');
+  const submitBtn  = document.getElementById('submitBtn');
+
+  ring.style.strokeDasharray = CIRC.toFixed(2);
+
+  // ---- Questions ----
+  let QUESTIONS = [];
+  let questionsReady = false;
+  const startBtn     = document.getElementById('startBtn');
+  const loadState    = document.getElementById('loadState');
+  const questionsBox = document.getElementById('questions');
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  // =====================================================================
+  //  ROLE TOGGLE
+  // =====================================================================
+  function switchRole(role){
+    currentRole = role;
+    const isAdmin = role === 'admin';
+
+    // Toggle slider
+    document.getElementById('roleSlider').className = isAdmin ? 'slider right' : 'slider';
+    document.getElementById('btnStudent').classList.toggle('active', !isAdmin);
+    document.getElementById('btnAdmin').classList.toggle('active', isAdmin);
+
+    // Toggle fields
+    document.getElementById('fieldNombres').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('fieldApellidos').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('fieldNRC').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('fieldUser').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('fieldPass').style.display = isAdmin ? 'block' : 'none';
+
+    // Toggle required
+    document.getElementById('li-nombres').required = !isAdmin;
+    document.getElementById('li-apellidos').required = !isAdmin;
+    document.getElementById('li-nrc').required = !isAdmin;
+    document.getElementById('li-user').required = isAdmin;
+    document.getElementById('li-pass').required = isAdmin;
+
+    // Update button & subtitle
+    startBtn.textContent = isAdmin ? 'Ingresar al panel ▸' : 'Iniciar evaluación ▸';
+    document.getElementById('loginSubtitle').textContent = isAdmin
+      ? 'Ingresa con tus credenciales de administrador'
+      : 'Ingresa tus datos para comenzar la evaluación';
+
+    // Update logo emoji
+    document.querySelector('.login .logo').textContent = isAdmin ? '🔐' : '📝';
+
+    // Hide load state for admin
+    loadState.style.display = isAdmin ? 'none' : 'block';
+
+    // Clear errors
+    document.getElementById('loginErr').textContent = '';
+  }
+  window.switchRole = switchRole;
+
+  function togglePassword(){
+    const inp = document.getElementById('li-pass');
+    const btn = inp.parentNode.querySelector('.toggle-pass');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? '🙈' : '👁';
+  }
+  window.togglePassword = togglePassword;
+
+  // =====================================================================
+  //  LOAD QUESTIONS — LocalStorage first, then Google Sheets fallback
+  // =====================================================================
+  function loadDefaultExam(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const data = JSON.parse(raw);
+        if(data.exams && data.exams.length){
+          const urlParams = new URLSearchParams(window.location.search);
+          const previewId = urlParams.get('preview');
+          let defaultExam = null;
+          if (previewId) defaultExam = data.exams.find(e => e.id === previewId);
+          if (!defaultExam) defaultExam = data.exams.find(e => e.isDefault) || data.exams[0];
+          
+          if(defaultExam && defaultExam.questions && defaultExam.questions.length){
+            QUESTIONS = defaultExam.questions;
+            TOTAL = (defaultExam.timeMinutes || 15) * 60;
+            left = TOTAL;
+            examName = defaultExam.name || 'Examen · PLN';
+            supabaseConfig = data.supabase || null;
+            questionsReady = true;
+            
+            // Calculate total points
+            let totalPts = 0;
+            QUESTIONS.forEach(q => { totalPts += parseFloat(q.points) || (q.points === 0 ? 0 : 1); });
+            
+            renderQuestions();
+            // Update exam title
+            document.getElementById('examTitle').textContent = examName + ' (Total: ' + totalPts + ' pts)';
+            loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas listas (examen local).';
+            loadState.style.color = 'var(--ok)';
+            timeEl.textContent = fmt(left);
+            return true;
+          }
+        }
+      }
+    }catch(e){
+      console.warn('Error loading local exam:', e);
+    }
+    return false;
+  }
+
+  function loadQuestions(){
+    // Try localStorage first
+    if(loadDefaultExam()) return;
+
+    // Fallback to Google Sheets
+    if(!SHEET_URL || SHEET_URL.indexOf('PEGA_AQUI') === 0){
+      loadState.textContent = '⚠️ Configura SHEET_URL o crea un examen desde el panel de administración.';
+      loadState.style.color = 'var(--warn)';
+      return;
+    }
+    fetch(SHEET_URL, { method:'GET' })
+      .then(r => r.json())
+      .then(data => {
+        if(!data.ok || !data.questions || !data.questions.length){
+          throw new Error(data.error || 'Sin preguntas');
+        }
+        QUESTIONS = data.questions;
+        TOTAL = 15 * 60; // 15 minutes default from Sheets
+        left = TOTAL;
+        questionsReady = true;
+        renderQuestions();
+        loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas listas (Google Sheets).';
+        loadState.style.color = 'var(--ok)';
+        timeEl.textContent = fmt(left);
+      })
+      .catch(err => {
+        loadState.textContent = '⚠️ No se pudieron cargar las preguntas. Crea un examen desde el panel admin.';
+        loadState.style.color = 'var(--danger)';
+        console.error(err);
+      });
+  }
+
+  // =====================================================================
+  //  RENDER QUESTIONS — supports images and LaTeX
+  // =====================================================================
+  function renderQuestions(){
+    questionsBox.innerHTML = '';
+    QUESTIONS.forEach((q, i) => {
+      const div = document.createElement('div');
+      div.className = 'q';
+      const titulo = q.title ? esc(q.title) : ('Pregunta ' + (i+1));
+      let html = '<h3><span class="num">'+(i+1)+'</span> '+titulo+'</h3>';
+      if(q.text) html += '<p class="qdesc">'+esc(q.text)+'</p>';
+
+      // Image
+      if(q.image){
+        const imgW = q.imageWidth || 50;
+        html += '<div class="q-image" style="max-width:'+imgW+'%; margin: 10px auto; text-align: center;"><img src="'+q.image+'" alt="Imagen pregunta '+(i+1)+'" style="max-width: 100%; display: inline-block; border-radius: 8px;"></div>';
+      }
+
+      // LaTeX
+      if(q.latex){
+        html += '<div class="q-latex" id="qlatex'+i+'"></div>';
+      }
+
+      const qType = q.type || 'radio';
+      
+      if(qType === 'radio' || qType === 'checkbox') {
+        q.options.forEach((opt, j) => {
+          const val = opt.letter || String.fromCharCode(97 + j);
+          let optImgHtml = opt.image ? `<img src="${opt.image}" class="opt-img" alt="Imagen opción">` : '';
+          html += `<label class="opt"><input type="${qType}" name="q${i}" value="${esc(val)}"> `
+               +  `<span class="opt-text">${esc(opt.text)}</span>${optImgHtml}</label>`;
+        });
+      } else if (qType === 'dropdown') {
+        html += `<select name="q${i}" class="input-dropdown"><option value="">-- Selecciona una opción --</option>`;
+        q.options.forEach((opt, j) => {
+          const val = opt.letter || String.fromCharCode(97 + j);
+          html += `<option value="${esc(val)}">${esc(opt.text)}</option>`;
+        });
+        html += `</select>`;
+      } else if (qType === 'matching') {
+        // Collect all possible matches and shuffle them
+        let matches = q.options.map(o => o.match).filter(m => m);
+        matches = matches.sort(() => Math.random() - 0.5);
+        
+        html += `<table class="match-table"><tbody>`;
+        q.options.forEach((opt, j) => {
+          html += `<tr>
+            <td>${esc(opt.text)}</td>
+            <td>
+              <select name="q${i}_${j}">
+                <option value="">-- Elegir --</option>`;
+          matches.forEach(m => {
+            html += `<option value="${esc(m)}">${esc(m)}</option>`;
+          });
+          html += `   </select>
+            </td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+      } else if (qType === 'text') {
+        html += `<textarea name="q${i}" class="input-text" placeholder="Escribe tu respuesta detallada aquí..."></textarea>`;
+      }
+      div.innerHTML = html;
+      questionsBox.appendChild(div);
+    });
+
+    // Render LaTeX after DOM is ready
+    requestAnimationFrame(() => {
+      if(typeof katex === 'undefined') return;
+      QUESTIONS.forEach((q, i) => {
+        if(q.latex){
+          const el = document.getElementById('qlatex'+i);
+          if(el){
+            try{ katex.render(q.latex, el, {throwOnError:false, displayMode:true}); }
+            catch(e){ el.textContent = q.latex; }
+          }
+        }
+      });
+    });
+  }
+
+  function fmt(s){
+    const m = Math.floor(s/60);
+    const r = s % 60;
+    return m + ':' + String(r).padStart(2,'0');
+  }
+
+  function render(){
+    timeEl.textContent = fmt(left);
+    const frac = left / TOTAL;
+    ring.style.strokeDashoffset = (CIRC * (1 - frac)).toFixed(2);
+
+    // color dinámico: rojo cuando falta 1 minuto o menos
+    ring.style.stroke = left <= 60 ? '#ef4444' : 'url(#grad)';
+    timeEl.style.color = left <= 60 ? '#ef4444' : 'var(--text)';
+
+    box.classList.toggle('pulse', left <= 60 && left > 0);
+    timeEl.classList.toggle('flash', left <= 10 && left > 0);
+    if(!finished){
+      statusEl.textContent = (left <= 60 && left > 0) ? '⚠️ ¡Último minuto!' : 'Examen en curso';
+    }
+  }
+
+  let tick = null;
+
+  function startExam(nombres, apellidos, nrc){
+    const isPreviewMode = new URLSearchParams(window.location.search).has('preview');
+    if(isPreviewMode) {
+      const btn = document.getElementById('closePreviewBtn');
+      if(btn) btn.style.display = 'block';
+    }
+
+    form.querySelector('[name="nombres"]').value = nombres;
+    form.querySelector('[name="apellidos"]').value = apellidos;
+    form.querySelector('[name="nrc"]').value = nrc;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('examArea').style.display = 'block';
+    render();
+    tick = setInterval(()=>{
+      if(finished) return;
+      left--;
+      if(left <= 0){
+        left = 0;
+        render();
+        clearInterval(tick);
+        grade(true);
+        return;
+      }
+      render();
+    }, 1000);
+    window.scrollTo(0,0);
+  }
+
+  // =====================================================================
+  //  LOGIN
+  // =====================================================================
+  document.getElementById('loginForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const err = document.getElementById('loginErr');
+
+    if(currentRole === 'admin'){
+      // Admin login
+      const user = document.getElementById('li-user').value.trim();
+      const pass = document.getElementById('li-pass').value;
+
+      // Get stored credentials
+      let creds = { user:'admin', pass:'admin123' };
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          const data = JSON.parse(raw);
+          if(data.adminCredentials) creds = data.adminCredentials;
+        }
+      }catch(e){}
+
+      if(user !== creds.user || pass !== creds.pass){
+        err.textContent = 'Usuario o contraseña incorrectos.';
+        return;
+      }
+
+      // Mark admin session and redirect
+      sessionStorage.setItem('pln_admin', 'true');
+      window.location.href = 'admin.html';
+      return;
+    }
+
+    // Student login
+    const n = document.getElementById('li-nombres').value.trim();
+    const a = document.getElementById('li-apellidos').value.trim();
+    const nrc = document.getElementById('li-nrc').value.trim();
+    if(n.length < 2 || a.length < 2){
+      err.textContent = 'Ingresa tus nombres y apellidos completos.';
+      return;
+    }
+    if(nrc.length < 3){
+      err.textContent = 'Ingresa un NRC válido.';
+      return;
+    }
+    if(!questionsReady){
+      err.textContent = 'Las preguntas aún no se han cargado. Espera un momento.';
+      return;
+    }
+    err.textContent = '';
+    startExam(n, a, nrc);
+  });
+
+  // Resaltar opción seleccionada y validar al instante en Vista Previa
+  form.addEventListener('change', e=>{
+    const isPreviewMode = new URLSearchParams(window.location.search).has('preview');
+    if(e.target.name && (e.target.type === 'radio' || e.target.type === 'checkbox')){
+      const isRadio = e.target.type === 'radio';
+      
+      let qIndexStr = e.target.name.substring(1); // "q1" -> "1", "q1_2" -> "1_2"
+      if(qIndexStr.includes('_')) qIndexStr = qIndexStr.split('_')[0];
+      const qIndex = parseInt(qIndexStr);
+
+      if(isRadio){
+        form.querySelectorAll('input[name="'+e.target.name+'"]').forEach(i=>{
+          const optEl = i.closest('.opt');
+          optEl.classList.toggle('sel', i.checked);
+          
+          if(isPreviewMode && !isNaN(qIndex)) {
+            const optVal = i.value;
+            const q = QUESTIONS[qIndex];
+            if(!q) return;
+            const optData = q.options.find((o, idx) => (o.letter || String.fromCharCode(97+idx)) === optVal);
+            
+            if(i.checked) {
+              if(optData && optData.correct) {
+                optEl.style.backgroundColor = '#dcfce7';
+                optEl.style.borderColor = '#22c55e';
+                optEl.style.color = '#166534';
+              } else {
+                optEl.style.backgroundColor = '#fee2e2';
+                optEl.style.borderColor = '#ef4444';
+                optEl.style.color = '#991b1b';
+              }
+            } else {
+              optEl.style.backgroundColor = '';
+              optEl.style.borderColor = '';
+              optEl.style.color = '';
+            }
+          }
+        });
+      } else {
+        const optEl = e.target.closest('.opt');
+        optEl.classList.toggle('sel', e.target.checked);
+        
+        if (isPreviewMode && !isNaN(qIndex)) {
+          const optVal = e.target.value;
+          const q = QUESTIONS[qIndex];
+          if(!q) return;
+          const optData = q.options.find((o, idx) => (o.letter || String.fromCharCode(97+idx)) === optVal);
+          
+          if(e.target.checked) {
+            if(optData && optData.correct) {
+              optEl.style.backgroundColor = '#dcfce7';
+              optEl.style.borderColor = '#22c55e';
+              optEl.style.color = '#166534';
+            } else {
+              optEl.style.backgroundColor = '#fee2e2';
+              optEl.style.borderColor = '#ef4444';
+              optEl.style.color = '#991b1b';
+            }
+          } else {
+            optEl.style.backgroundColor = '';
+            optEl.style.borderColor = '';
+            optEl.style.color = '';
+          }
+        }
+      }
+    }
+  });
+
+  function grade(auto){
+    if(finished) return;
+    finished = true;
+    clearInterval(tick);
+
+    let scoreObtained = 0;
+    let scoreTotal = 0;
+    const respuestas = [];
+    const respuestasDetalladas = [];
+
+    QUESTIONS.forEach((q, i) => {
+      const qType = q.type || 'radio';
+      const pts = parseFloat(q.points) || (q.points === 0 ? 0 : 1);
+      if(qType !== 'text') scoreTotal += pts;
+      
+      let chosen = '-';
+      let isCorrect = false;
+
+      if(qType === 'radio'){
+        const sel = form.querySelector('input[name="q'+i+'"]:checked');
+        chosen = sel ? sel.value : '-';
+        const correcta = (q.options.find(o => o.correct) || {}).letter || '?';
+        isCorrect = (chosen === correcta);
+      } 
+      else if(qType === 'checkbox'){
+        const sels = Array.from(form.querySelectorAll('input[name="q'+i+'"]:checked')).map(el => el.value);
+        chosen = sels.length ? sels.join(',') : '-';
+        const correctas = q.options.filter(o => o.correct).map(o => o.letter || '');
+        isCorrect = (sels.length === correctas.length && correctas.every(c => sels.includes(c)));
+      }
+      if(isCorrect) scoreObtained += pts;
+      respuestas.push(chosen);
+      respuestasDetalladas.push({
+        pregunta: q.title || ('Pregunta ' + (i+1)),
+        elegida: chosen,
+        correcta: (qType === 'radio' || qType === 'checkbox') ? q.options.filter(o => o.correct).map(o => o.letter).join(',') : '',
+        esCorrecta: isCorrect,
+        puntosGanados: isCorrect ? pts : 0,
+        puntosMax: pts
+      });
+    });
+
+    // Bloquear formulario
+    form.classList.add('locked');
+    submitBtn.disabled = true;
+    statusEl.textContent = auto ? '⏰ ¡Tiempo agotado!' : '✔ Examen enviado';
+    box.classList.remove('pulse');
+    timeEl.classList.remove('flash');
+
+    const pct = scoreTotal > 0 ? Math.round((scoreObtained/scoreTotal)*100) : 0;
+    const res = document.getElementById('result');
+    const badge = document.getElementById('badge');
+    const scoreTxt = document.getElementById('scoreTxt');
+    const detail = document.getElementById('detailTxt');
+
+    let col = pct >= 75 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626';
+    badge.textContent = pct >= 75 ? 'Aprobado' : pct >= 50 ? 'Suficiente' : 'A mejorar';
+    badge.style.background = col; badge.style.color = '#ffffff';
+    scoreTxt.textContent = scoreObtained + ' / ' + scoreTotal + ' pts  (' + pct + '%)';
+    scoreTxt.style.color = col;
+    
+    let detMsg = auto ? 'El examen se cerró automáticamente por tiempo.' : 'Examen enviado correctamente.';
+    detail.textContent = detMsg;
+
+    res.classList.add('show');
+    res.scrollIntoView({behavior:'smooth', block:'center'});
+
+    const dataPayload = {
+      examName: examName,
+      fecha: new Date().toLocaleString(),
+      nombres: (form.querySelector('[name="nombres"]').value || '').trim() || 'Sin nombre',
+      apellidos: (form.querySelector('[name="apellidos"]').value || '').trim() || 'Sin apellido',
+      nrc: (form.querySelector('[name="nrc"]').value || '').trim() || 'Sin NRC',
+      respuestas: respuestas,
+      respuestasDetalladas: respuestasDetalladas,
+      aciertos: scoreObtained,
+      total: scoreTotal,
+      porcentaje: pct,
+      enviado: auto ? 'Automático (tiempo agotado)' : 'Manual'
+    };
+
+    // Guardar en Google Sheets
+    saveToSheet(dataPayload, detail);
+    
+    // Guardar en Supabase si está configurado
+    saveToSupabase(dataPayload, detail);
+
+    // Redirigir al inicio después de 60 segundos
+    setTimeout(() => {
+      exitExam();
+    }, 60000);
+  }
+
+  function exitExam(){
+    const urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.get('preview')){
+      window.close();
+      window.location.href = 'admin.html'; // fallback if window.close is blocked
+    } else {
+      window.location.href = window.location.pathname;
+    }
+  }
+  window.exitExam = exitExam;
+
+  function saveToSupabase(data, detailEl){
+    if(!supabaseConfig || !supabaseConfig.url || !supabaseConfig.key){
+      return; // No supabase config
+    }
+    const tableUrl = supabaseConfig.url.replace(/\/$/, '') + '/rest/v1/resultados_examenes';
+    
+    fetch(tableUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseConfig.key,
+        'Authorization': 'Bearer ' + supabaseConfig.key,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        examen_nombre: data.examName,
+        nombres: data.nombres,
+        apellidos: data.apellidos,
+        nrc: data.nrc,
+        puntaje_obtenido: data.aciertos,
+        puntaje_total: data.total,
+        porcentaje: data.porcentaje,
+        respuestas: data.respuestasDetalladas
+      })
+    })
+    .then(r => {
+      if(r.ok) detailEl.textContent += ' ☁️ Respaldo guardado.';
+      else detailEl.textContent += ' ⚠️ Error en respaldo.';
+    })
+    .catch(e => console.error('Supabase error', e));
+  }
+
+  function saveToSheet(data, detailEl){
+    if(!SHEET_URL || SHEET_URL.indexOf('PEGA_AQUI') === 0){
+      console.warn('SHEET_URL no configurada: no se guardó en Google Sheets.');
+      return;
+    }
+    fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify(data)
+    })
+    .then(()=>{ detailEl.textContent += '  ✅ Resultado guardado.'; })
+    .catch(()=>{ detailEl.textContent += '  ⚠️ No se pudo guardar el resultado.'; });
+  }
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    grade(false);
+  });
+
+  // Cargar preguntas al abrir la página
+  loadQuestions();
+  
+  // Auto-iniciar si es vista previa
+  const urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get('preview') && questionsReady) {
+    startExam('Profesor', '(Vista Previa)', '00000');
+  }
+})();
+</script>
+</body>
+</html>

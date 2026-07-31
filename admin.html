@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Administración · PLN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://unpkg.com/mathlive"></script>
+<style>
+:root{
+  --bg:#f8fafc;
+  --bg2:#f1f5f9;
+  --card:#ffffff;
+  --card2:#f8fafc;
+  --card3:#f1f5f9;
+  --accent:#0094d9;
+  --accent2:#002752;
+  --accent3:#2563eb;
+  --ok:#16a34a;
+  --warn:#d97706;
+  --danger:#dc2626;
+  --text:#0f172a;
+  --muted:#64748b;
+  --ring:#e2e8f0;
+  --ring2:#cbd5e1;
+  --glass:rgba(255,255,255,.9);
+  --shadow:0 4px 16px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;top:-200px;right:-200px;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,148,217,.08),transparent 70%);
+  pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';position:fixed;bottom:-300px;left:-200px;
+  width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,39,82,.06),transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+/* ===== LAYOUT ===== */
+.app{display:flex;min-height:100vh;position:relative;z-index:1}
+
+/* -- Sidebar -- */
+.sidebar{
+  width:260px;min-height:100vh;
+  background:var(--card);
+  border-right:1px solid var(--ring);
+  display:flex;flex-direction:column;
+  position:fixed;left:0;top:0;bottom:0;z-index:30;
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.sidebar .brand{
+  padding:24px 20px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--ring);
+}
+.brand .icon{
+  width:42px;height:42px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 4px 12px rgba(0,39,82,.2);
+  color: #fff;
+}
+.brand span{font-weight:800;font-size:16px;letter-spacing:-.3px}
+.brand small{display:block;font-size:11px;color:var(--muted);font-weight:400}
+
+.sidebar nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.sidebar nav button{
+  display:flex;align-items:center;gap:12px;
+  width:100%;padding:12px 14px;border:none;border-radius:12px;
+  background:transparent;color:var(--muted);font-size:14px;font-weight:500;
+  cursor:pointer;transition:.15s;font-family:inherit;text-align:left;
+}
+.sidebar nav button:hover{background:var(--card2);color:var(--text)}
+.sidebar nav button.active{background:linear-gradient(135deg,rgba(0,148,217,.15),rgba(0,39,82,.1));color:var(--accent2);font-weight:700}
+.sidebar nav button .navicon{font-size:18px;width:24px;text-align:center}
+
+.sidebar .sidebar-footer{
+  padding:16px;border-top:1px solid var(--ring);
+}
+.sidebar .sidebar-footer button{
+  width:100%;display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border:none;border-radius:10px;
+  background:rgba(239,68,68,.1);color:#f87171;font-size:13px;font-weight:600;
+  cursor:pointer;transition:.15s;font-family:inherit;
+}
+.sidebar .sidebar-footer button:hover{background:rgba(239,68,68,.2)}
+
+/* -- Main -- */
+.main{margin-left:260px;flex:1;padding:28px 32px;min-height:100vh}
+
+/* -- Header -- */
+.page-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:28px;
+}
+.page-header h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.page-header h1 .accent{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 18px;border:none;border-radius:12px;
+  font-size:13px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:.2s;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  color:#ffffff;box-shadow:0 4px 16px rgba(0,148,217,.25);
+}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,148,217,.35)}
+.btn-secondary{background:var(--card2);border:1px solid var(--ring);color:var(--text)}
+.btn-secondary:hover{border-color:var(--accent);background:var(--card3)}
+.btn-danger{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.22)}
+.btn-success{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.btn-success:hover{background:rgba(34,197,94,.22)}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
+.btn-icon{width:36px;height:36px;padding:0;justify-content:center;border-radius:10px}
+
+/* ===== CARDS ===== */
+.exam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.exam-card{
+  background:var(--card);border:1px solid var(--ring);border-radius:16px;
+  padding:22px;transition:.25s;position:relative;overflow:hidden;
+}
+.exam-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  opacity:0;transition:.25s;
+}
+.exam-card:hover{border-color:var(--ring2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.exam-card:hover::before{opacity:1}
+.exam-card.default-exam{border-color:rgba(56,189,248,.3)}
+.exam-card.default-exam::before{opacity:1}
+.exam-card .card-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;
+  margin-bottom:12px;
+}
+.exam-card .card-badge.badge-default{background:rgba(56,189,248,.15);color:var(--accent)}
+.exam-card .card-badge.badge-draft{background:rgba(148,163,184,.1);color:var(--muted)}
+.exam-card h3{font-size:17px;font-weight:700;margin-bottom:6px}
+.exam-card .card-meta{display:flex;gap:16px;color:var(--muted);font-size:12px;margin-bottom:16px}
+.exam-card .card-meta span{display:flex;align-items:center;gap:5px}
+.exam-card .card-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ===== EMPTY STATE ===== */
+.empty{
+  text-align:center;padding:60px 20px;
+  background:var(--card);border:1px dashed var(--ring);border-radius:20px;
+}
+.empty .empty-icon{font-size:48px;margin-bottom:16px;opacity:.6}
+.empty h3{font-size:18px;margin-bottom:8px;color:var(--text)}
+.empty p{color:var(--muted);font-size:14px;margin-bottom:20px}
+
+/* ===== EDITOR ===== */
+.editor{display:none}
+.editor.active{display:block}
+
+.editor-header{
+  background:var(--card);border:1px solid var(--ring);border-radius:16px;
+  padding:24px;margin-bottom:20px;
+}
+.editor-header .top-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.editor-header .top-row .back-btn{
+  width:38px;height:38px;border-radius:10px;border:1px solid var(--ring);
+  background:var(--card2);color:var(--text);font-size:18px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;
+}
+.editor-header .top-row .back-btn:hover{border-color:var(--accent)}
+.editor-header .top-row h2{font-size:20px;font-weight:800;flex:1}
+
+.form-row{display:flex;gap:14px;flex-wrap:wrap}
+.form-group{flex:1;min-width:200px}
+.form-group label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:11px 14px;
+  background:var(--card2);border:1px solid var(--ring);border-radius:10px;
+  color:var(--text);font-size:14px;font-family:inherit;transition:.15s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.1);
+}
+.form-group textarea{min-height:80px;resize:vertical}
+
+/* Questions list */
+.questions-list{display:flex;flex-direction:column;gap:16px}
+
+.question-card{
+  background:var(--card);border:1px solid var(--ring);border-radius:16px;
+  overflow:hidden;transition:.2s;
+}
+.question-card:hover{border-color:var(--ring2)}
+.question-card .q-header{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 20px;background:var(--card2);
+  border-bottom:1px solid var(--ring);cursor:grab;
+}
+.question-card .q-header:active{cursor:grabbing}
+.question-card .q-num{
+  background:linear-gradient(135deg,var(--accent2),var(--accent3));
+  color:#0b1020;font-weight:800;
+  min-width:30px;height:30px;border-radius:10px;
+  display:inline-flex;align-items:center;justify-content:center;font-size:14px;
+}
+.question-card .q-header .q-title{flex:1;font-weight:600;font-size:14px}
+.question-card .q-header .q-actions{display:flex;gap:6px}
+.question-card .q-body{padding:20px}
+
+.q-body .img-upload{
+  margin:12px 0;padding:16px;
+  border:2px dashed var(--ring);border-radius:12px;
+  text-align:center;cursor:pointer;transition:.15s;
+}
+.q-body .img-upload:hover{border-color:var(--accent);background:rgba(56,189,248,.03)}
+.q-body .img-upload input[type=file]{display:none}
+.q-body .img-upload .upload-label{color:var(--muted);font-size:13px}
+.q-body .img-preview{
+  margin:10px 0;max-width:100%;border-radius:10px;
+  border:1px solid var(--ring);overflow:hidden;position:relative;
+}
+.q-body .img-preview img{max-width:100%;display:block}
+.q-body .img-preview .remove-img{
+  position:absolute;top:8px;right:8px;
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+
+.q-body .latex-row{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+.q-body .latex-row input{flex:1}
+.q-body .latex-preview{
+  padding:10px 16px;min-height:44px;
+  background:var(--bg2);border:1px solid var(--ring);border-radius:10px;
+  display:flex;align-items:center;font-size:18px;min-width:140px;
+}
+
+/* Image size slider */
+.img-size-row{
+  display:flex;align-items:center;gap:10px;margin-top:8px;
+}
+.img-size-row label{font-size:11px;color:var(--muted);white-space:nowrap}
+.img-size-row input[type=range]{
+  flex:1;height:6px;-webkit-appearance:none;appearance:none;
+  background:var(--ring);border-radius:3px;outline:none;cursor:pointer;
+}
+.img-size-row input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));cursor:pointer;
+  box-shadow:0 2px 6px rgba(56,189,248,.3);
+}
+.img-size-row .size-val{
+  font-size:12px;font-weight:700;color:var(--accent);min-width:36px;text-align:center;
+}
+
+/* Equation Toolbar */
+.eq-toolbar{
+  margin:8px 0 6px;display:flex;flex-direction:column;gap:6px;
+}
+.eq-toolbar-tabs{
+  display:flex;gap:4px;flex-wrap:wrap;
+}
+.eq-toolbar-tabs button{
+  padding:5px 10px;border:1px solid var(--ring);border-radius:8px;
+  background:var(--card2);color:var(--muted);font-size:11px;font-weight:600;
+  cursor:pointer;transition:.15s;font-family:inherit;
+}
+.eq-toolbar-tabs button:hover{border-color:var(--accent);color:var(--accent)}
+.eq-toolbar-tabs button.tab-active{background:rgba(56,189,248,.12);border-color:var(--accent);color:var(--accent)}
+.eq-symbols{
+  display:flex;flex-wrap:wrap;gap:4px;
+  padding:8px;background:var(--bg2);border:1px solid var(--ring);border-radius:10px;
+  max-height:120px;overflow-y:auto;
+}
+.eq-symbols button{
+  min-width:36px;height:34px;padding:2px 6px;border:1px solid var(--ring);
+  border-radius:6px;background:var(--card);color:var(--text);
+  font-size:15px;cursor:pointer;transition:.12s;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Inter',system-ui,sans-serif;
+}
+.eq-symbols button:hover{border-color:var(--accent);background:rgba(56,189,248,.08);transform:scale(1.08)}
+.eq-symbols button .sym-label{
+  font-size:10px;color:var(--muted);display:block;line-height:1;
+}
+
+/* Options editor */
+.options-editor{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.option-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--card2);
+  border:1px solid var(--ring);border-radius:10px;transition:.15s;
+}
+.option-row:hover{border-color:var(--ring2)}
+.option-row .opt-letter{
+  width:28px;height:28px;border-radius:8px;
+  background:var(--card);display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;color:var(--muted);flex-shrink:0;
+}
+.option-row input[type=text]{
+  flex:1;padding:8px 10px;
+  background:transparent;border:1px solid transparent;border-radius:8px;
+  color:var(--text);font-size:14px;font-family:inherit;
+}
+.option-row input[type=text]:focus{border-color:var(--accent);outline:none}
+.option-row .correct-toggle{
+  width:32px;height:32px;border-radius:8px;border:2px solid var(--ring);
+  background:transparent;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;font-size:16px;transition:.2s;flex-shrink:0;
+}
+.option-row .correct-toggle.is-correct{
+  border-color:var(--ok);background:rgba(34,197,94,.15);
+}
+.option-row .remove-opt{
+  width:28px;height:28px;border-radius:6px;border:none;
+  background:transparent;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:14px;transition:.15s;
+}
+.option-row .remove-opt:hover{color:var(--danger);background:rgba(239,68,68,.1)}
+
+.opt-img-upload{
+  width:28px;height:28px;border-radius:6px;border:1px dashed var(--ring);
+  background:transparent;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  transition:.15s;flex-shrink:0; position:relative;
+}
+.opt-img-upload:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,148,217,.08)}
+.opt-img-upload input[type=file]{display:none;}
+
+.opt-img-preview{
+  width:32px;height:32px;border-radius:6px;border:1px solid var(--ring);
+  overflow:hidden;position:relative;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.opt-img-preview img{max-width:100%;max-height:100%;object-fit:cover;}
+.opt-img-preview .remove-opt-img{
+  position:absolute;top:0;right:0;width:14px;height:14px;
+  background:rgba(0,0,0,.6);color:#fff;font-size:8px;border:none;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+
+.add-option-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px;border:2px dashed var(--ring);border-radius:10px;
+  background:transparent;color:var(--muted);font-size:13px;font-weight:600;
+  cursor:pointer;transition:.15s;font-family:inherit;width:100%;
+}
+.add-option-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+.add-question-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:18px;border:2px dashed var(--ring);border-radius:16px;
+  background:transparent;color:var(--muted);font-size:15px;font-weight:700;
+  cursor:pointer;transition:.2s;font-family:inherit;width:100%;
+}
+.add-question-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,.03)}
+
+.editor-footer{
+  display:flex;gap:12px;justify-content:flex-end;
+  margin-top:24px;padding:20px 24px;
+  background:var(--card);border:1px solid var(--ring);border-radius:16px;
+}
+
+/* ===== SETTINGS ===== */
+.settings-card{
+  background:var(--card);border:1px solid var(--ring);border-radius:16px;
+  padding:24px;max-width:500px;margin-bottom:20px;
+}
+.settings-card h3{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.field-pass-wrap{position:relative}
+.field-pass-wrap input{padding-right:44px}
+.toggle-pass{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  width:36px;height:36px;border:none;border-radius:8px;
+  background:transparent;color:var(--muted);font-size:18px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.15s;
+}
+.toggle-pass:hover{color:var(--accent);background:rgba(56,189,248,.08)}
+
+/* ===== TOAST ===== */
+.toast-wrap{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:14px 20px;border-radius:12px;font-size:13px;font-weight:600;
+  box-shadow:var(--shadow);animation:slideIn .3s ease;
+  display:flex;align-items:center;gap:10px;
+  backdrop-filter:blur(12px);
+}
+.toast.success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80}
+.toast.error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+.toast.info{background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.3);color:var(--accent)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+@keyframes slideOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(20px)}}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  z-index:100;display:none;align-items:center;justify-content:center;
+  animation:fadeIn .2s ease;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--card);border:1px solid var(--ring);border-radius:20px;
+  padding:28px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);
+  animation:rise .3s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.modal h3{font-size:18px;margin-bottom:8px}
+.modal p{color:var(--muted);font-size:14px;margin-bottom:20px}
+.modal .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* ===== Responsive ===== */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:20px 16px}
+  .exam-grid{grid-template-columns:1fr}
+  .mobile-toggle{display:flex !important}
+}
+.mobile-toggle{
+  display:none;position:fixed;top:16px;left:16px;z-index:40;
+  width:42px;height:42px;border-radius:12px;
+  background:var(--card);border:1px solid var(--ring);
+  color:var(--text);font-size:20px;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile toggle -->
+<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h3>⚠️ Eliminar Examen</h3>
+    <p id="deleteModalText">¿Estás seguro de que deseas eliminar este examen? Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="icon">⚡</div>
+    <div>
+      <span>PLN Admin</span>
+      <small>Gestión de Exámenes</small>
+    </div>
+  </div>
+  <nav>
+    <button class="active" data-view="dashboard" onclick="showView('dashboard')">
+      <span class="navicon">📋</span> Mis Exámenes
+    </button>
+    <button data-view="editor" onclick="createNewExam()">
+      <span class="navicon">✏️</span> Crear Examen
+    </button>
+    <button data-view="settings" onclick="showView('settings')">
+      <span class="navicon">⚙️</span> Configuración
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button onclick="logout()">
+      <span>🚪</span> Cerrar Sesión
+    </button>
+  </div>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main">
+
+  <!-- ==================== DASHBOARD ==================== -->
+  <div id="view-dashboard">
+    <div class="page-header">
+      <h1>Mis <span class="accent">Exámenes</span></h1>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="https://docs.google.com/spreadsheets/d/1qzlMstIy9fZXrZLkonoLrhMgb_iIj_IpVJjjX8ULIKE/edit?usp=sharing" target="_blank" class="btn btn-secondary">📊 Ver Resultados</a>
+        <button class="btn btn-secondary" onclick="renderExamList()" title="Actualizar lista">🔄 Actualizar</button>
+        <button class="btn btn-primary" onclick="createNewExam()">✨ Nuevo Examen</button>
+      </div>
+    </div>
+    <div id="examList"></div>
+  </div>
+
+  <!-- ==================== EDITOR ==================== -->
+  <div id="view-editor" class="editor">
+    <div class="editor-header">
+      <div class="top-row">
+        <button class="back-btn" onclick="showView('dashboard')" title="Volver">←</button>
+        <h2 id="editorTitle">Nuevo Examen</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label for="examName">Nombre del Examen</label>
+          <input type="text" id="examName" placeholder="Ej: Parcial 1 – Pensamiento Lógico">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label for="examTime">Tiempo (minutos)</label>
+          <input type="number" id="examTime" value="15" min="1" max="180">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>Puntaje Total</label>
+          <div id="editorTotalPts" style="font-size:18px;font-weight:bold;color:var(--primary);padding-top:8px;">0 pts</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="questions-list" id="questionsList"></div>
+
+    <button class="add-question-btn" onclick="addQuestion()" style="margin-top:16px">
+      ＋ Agregar Pregunta
+    </button>
+
+    <div class="editor-footer">
+      <button class="btn btn-secondary" onclick="showView('dashboard')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveExam" onclick="saveExam()">💾 Guardar Examen</button>
+    </div>
+  </div>
+
+  <!-- ==================== SETTINGS ==================== -->
+  <div id="view-settings" style="display:none">
+    <div class="page-header">
+      <h1>⚙️ Configuración</h1>
+    </div>
+
+    <div class="settings-card">
+      <h3>🔐 Credenciales de Administrador</h3>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="setUser">Usuario</label>
+        <input type="text" id="setUser">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="setPass">Nueva Contraseña</label>
+        <div class="field-pass-wrap">
+          <input type="password" id="setPass" placeholder="Dejar vacío para no cambiar">
+          <button type="button" class="toggle-pass" onclick="toggleAdminPass()" title="Mostrar/ocultar contraseña">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveCredentials()">Guardar Credenciales</button>
+    </div>
+
+    <div class="settings-card">
+      <h3>☁️ Configuración Supabase (Respaldo)</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:14px">
+        Ingresa tus credenciales para respaldar automáticamente las respuestas de los estudiantes en Supabase.
+      </p>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="setSupabaseUrl">Supabase URL</label>
+        <input type="text" id="setSupabaseUrl" placeholder="Ej: https://xxxx.supabase.co">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="setSupabaseKey">Supabase Anon Key</label>
+        <input type="password" id="setSupabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5c...">
+      </div>
+      <button class="btn btn-primary" onclick="saveSupabaseConfig()">Guardar Supabase</button>
+    </div>
+
+    <div class="settings-card">
+      <h3>📦 Datos</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:14px">
+        Los exámenes se almacenan en el navegador (localStorage).<br>
+        Espacio usado: <strong id="storageUsed">–</strong>
+      </p>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" onclick="exportData()">📤 Exportar JSON</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Importar JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+</div><!-- /.app -->
+
+<script>
+(function(){
+
+// =====================================================================
+//  DATA LAYER
+// =====================================================================
+const STORAGE_KEY = 'pln_exams';
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    return JSON.parse(raw);
+  }catch(e){ return defaultData(); }
+}
+
+function defaultData(){
+  return {
+    exams: [],
+    adminCredentials: { user:'admin', pass:'admin123' },
+    supabase: { url: '', key: '' }
+  };
+}
+
+function saveData(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function uuid(){
+  return 'ex_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+
+let DATA = loadData();
+let editingExamId = null; // null = new exam
+let editorQuestions = [];  // in-memory questions while editing
+
+// =====================================================================
+//  AUTH CHECK
+// =====================================================================
+if(sessionStorage.getItem('pln_admin') !== 'true'){
+  window.location.href = 'examen.html';
+}
+
+// =====================================================================
+//  VIEWS
+// =====================================================================
+function showView(name){
+  document.getElementById('view-dashboard').style.display = name==='dashboard' ? 'block':'none';
+  document.getElementById('view-editor').style.display = name==='editor' ? 'block':'none';
+  document.getElementById('view-editor').className = name==='editor' ? 'editor active':'editor';
+  document.getElementById('view-settings').style.display = name==='settings' ? 'block':'none';
+  document.querySelectorAll('.sidebar nav button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view === name);
+  });
+  if(name==='dashboard') renderExamList();
+  if(name==='settings') loadSettings();
+}
+window.showView = showView;
+
+// =====================================================================
+//  DASHBOARD – EXAM LIST
+// =====================================================================
+function renderExamList(){
+  const container = document.getElementById('examList');
+  DATA = loadData();
+  if(!DATA.exams.length){
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📝</div>
+        <h3>No hay exámenes aún</h3>
+        <p>Crea tu primer examen para que los estudiantes puedan responderlo.</p>
+        <button class="btn btn-primary" onclick="createNewExam()">✨ Crear Examen</button>
+      </div>`;
+    return;
+  }
+  let html = '<div class="exam-grid">';
+  DATA.exams.forEach(ex => {
+    const isDefault = ex.isDefault;
+    const date = ex.createdAt ? new Date(ex.createdAt).toLocaleDateString('es-EC',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    html += `
+      <div class="exam-card ${isDefault ? 'default-exam':''}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <h3 style="margin:0; font-size:18px;">${esc(ex.name || 'Sin nombre')}</h3>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:700; color:${isDefault ? 'var(--ok)' : 'var(--muted)'};">
+            <input type="radio" name="activeExam" ${isDefault ? 'checked' : ''} onchange="setDefault('${ex.id}')" style="accent-color:var(--ok); width:16px; height:16px;">
+            ${isDefault ? 'Examen Activo' : 'Activar'}
+          </label>
+        </div>
+        <div class="card-meta" style="margin-bottom:14px;">
+          <span>📝 ${ex.questions ? ex.questions.length : 0} preguntas</span>
+          <span>⏱ ${ex.timeMinutes || 15} min</span>
+          <span>📅 ${date}</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-sm btn-secondary" onclick="editExam('${ex.id}')">✏️ Editar</button>
+          <a class="btn btn-sm btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center;" href="examen.html?preview=${ex.id}" target="_blank">👁️ Vista Previa</a>
+          <button class="btn btn-sm btn-secondary" onclick="duplicateExam('${ex.id}')">📋 Duplicar</button>
+          <button class="btn btn-sm btn-danger" onclick="openDeleteModal('${ex.id}')">🗑</button>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// =====================================================================
+//  EXAM ACTIONS
+// =====================================================================
+function createNewExam(){
+  editingExamId = null;
+  editorQuestions = [];
+  document.getElementById('examName').value = '';
+  document.getElementById('examTime').value = '15';
+  document.getElementById('editorTitle').textContent = '✨ Nuevo Examen';
+  document.getElementById('btnSaveExam').textContent = '💾 Guardar Examen';
+  addQuestion(); // start with one empty question
+  showView('editor');
+}
+window.createNewExam = createNewExam;
+
+function editExam(id){
+  DATA = loadData();
+  const ex = DATA.exams.find(e => e.id === id);
+  if(!ex){ toast('Examen no encontrado','error'); return; }
+  editingExamId = id;
+  editorQuestions = JSON.parse(JSON.stringify(ex.questions || []));
+  document.getElementById('examName').value = ex.name || '';
+  document.getElementById('examTime').value = ex.timeMinutes || 15;
+  document.getElementById('editorTitle').textContent = '✏️ Editar Examen';
+  document.getElementById('btnSaveExam').textContent = '💾 Actualizar Examen';
+  renderEditorQuestions();
+  showView('editor');
+}
+window.editExam = editExam;
+
+function duplicateExam(id){
+  DATA = loadData();
+  const ex = DATA.exams.find(e => e.id === id);
+  if(!ex) return;
+  const dup = JSON.parse(JSON.stringify(ex));
+  dup.id = uuid();
+  dup.name = (dup.name || 'Examen') + ' (copia)';
+  dup.isDefault = false;
+  dup.createdAt = new Date().toISOString();
+  DATA.exams.push(dup);
+  saveData(DATA);
+  renderExamList();
+  toast('Examen duplicado','success');
+}
+window.duplicateExam = duplicateExam;
+
+function setDefault(id){
+  DATA = loadData();
+  DATA.exams.forEach(e => e.isDefault = (e.id === id));
+  saveData(DATA);
+  renderExamList();
+  toast('Examen marcado como por defecto','success');
+}
+window.setDefault = setDefault;
+
+let pendingDeleteId = null;
+function openDeleteModal(id){
+  pendingDeleteId = id;
+  document.getElementById('deleteModal').classList.add('show');
+}
+window.openDeleteModal = openDeleteModal;
+
+function closeDeleteModal(){
+  document.getElementById('deleteModal').classList.remove('show');
+  pendingDeleteId = null;
+}
+window.closeDeleteModal = closeDeleteModal;
+
+document.getElementById('confirmDeleteBtn').addEventListener('click',()=>{
+  if(!pendingDeleteId) return;
+  DATA = loadData();
+  DATA.exams = DATA.exams.filter(e => e.id !== pendingDeleteId);
+  saveData(DATA);
+  closeDeleteModal();
+  renderExamList();
+  toast('Examen eliminado','info');
+});
+
+// =====================================================================
+//  EDITOR – QUESTIONS
+// =====================================================================
+function renderEditorQuestions(){
+  const list = document.getElementById('questionsList');
+  list.innerHTML = '';
+  
+  let totalPts = 0;
+  
+  editorQuestions.forEach((q, qi) => {
+    totalPts += parseFloat(q.points) || (q.points === 0 ? 0 : 1);
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.dataset.index = qi;
+
+    // Header
+    let headerHTML = `
+      <div class="q-header" draggable="true" ondragstart="dragStart(event,${qi})" ondragover="dragOver(event)" ondrop="dropQ(event,${qi})">
+        <span class="q-num">${qi+1}</span>
+        <span class="q-title">${esc(q.title || q.text || 'Pregunta '+(qi+1)).substring(0,60)}</span>
+        <div class="q-actions">
+          <button class="btn btn-icon btn-secondary" onclick="moveQuestion(${qi},-1)" title="Subir">↑</button>
+          <button class="btn btn-icon btn-secondary" onclick="moveQuestion(${qi},1)" title="Bajar">↓</button>
+          <button class="btn btn-icon btn-danger" onclick="removeQuestion(${qi})" title="Eliminar">✕</button>
+        </div>
+      </div>`;
+
+    // Body (Split in two columns)
+    let bodyHTML = '<div class="q-body" style="display:flex;gap:20px;flex-wrap:wrap;">';
+    
+    // LEFT COLUMN: EDITOR
+    bodyHTML += '<div class="q-editor-fields" style="flex:1;min-width:300px;">';
+
+    // Title/enunciado & Type & Points
+    bodyHTML += `
+      <div class="form-group" style="margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:2;min-width:200px;">
+          <label>Título de la pregunta</label>
+          <input type="text" value="${escAttr(q.title||'')}" placeholder="Ej: Pregunta 1" onchange="updateQ(${qi},'title',this.value); renderEditorQuestions();">
+        </div>
+        <div style="flex:2;min-width:200px;">
+          <label>Tipo de pregunta</label>
+          <select onchange="updateQ(${qi},'type',this.value); renderEditorQuestions();" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--ring);background:var(--card2);font-family:inherit;font-size:14px;">
+            <option value="radio" ${(!q.type || q.type==='radio') ? 'selected':''}>Opción múltiple (1 respuesta)</option>
+            <option value="checkbox" ${q.type==='checkbox' ? 'selected':''}>Casillas (Varias respuestas)</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:100px;">
+          <label>Puntaje</label>
+          <input type="number" min="0" step="0.5" value="${q.points !== undefined ? q.points : 1}" onchange="updateQ(${qi},'points', parseFloat(this.value)||0); renderEditorQuestions();" style="width:100%;">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Enunciado / Descripción</label>
+        <textarea placeholder="Escribe el enunciado de la pregunta..." onchange="updateQ(${qi},'text',this.value); renderEditorQuestions();">${esc(q.text||'')}</textarea>
+      </div>`;
+
+    // Image upload
+    bodyHTML += `
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Imagen (opcional)</label>`;
+    if(q.image){
+      const imgW = q.imageWidth || 50;
+      bodyHTML += `
+        <div class="img-preview" style="max-width:${imgW}%">
+          <img src="${q.image}" alt="Imagen pregunta">
+          <button class="remove-img" onclick="removeImage(${qi})" title="Quitar imagen">✕</button>
+        </div>
+        <div class="img-size-row">
+          <label>📐 Tamaño:</label>
+          <input type="range" min="15" max="100" value="${imgW}" oninput="updateImageWidth(${qi},this.value,this.parentNode)">
+          <span class="size-val">${imgW}%</span>
+        </div>`;
+    } else {
+      bodyHTML += `
+        <div class="img-upload" onclick="this.querySelector('input').click()">
+          <input type="file" accept="image/*" onchange="handleImageUpload(event,${qi})">
+          <div class="upload-label">📷 Click para subir imagen</div>
+        </div>`;
+    }
+    bodyHTML += '</div>';
+
+    // Equation editor with MathLive
+    bodyHTML += `
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Ecuación (opcional) — Usa el teclado visual</label>
+        <math-field style="width:100%;font-size:1.2rem;padding:8px;background:var(--card2);border:1px solid var(--ring);border-radius:10px;min-height:50px;color:var(--text)"
+          oninput="updateLatex(${qi}, this.value)" onfocusout="renderEditorQuestions()">${escAttr(q.latex||'')}</math-field>
+      </div>`;
+
+    // Options conditionally based on type
+    const qType = q.type || 'radio';
+    if(qType === 'radio' || qType === 'checkbox'){
+      bodyHTML += '<label style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block">Opciones de respuesta</label>';
+      bodyHTML += '<div class="options-editor">';
+      (q.options || []).forEach((opt, oi) => {
+        let optImgHtml = '';
+        if(opt.image){
+          optImgHtml = `<div class="opt-img-preview"><img src="${opt.image}"><button class="remove-opt-img" onclick="removeOptImage(${qi},${oi})" title="Quitar">✕</button></div>`;
+        } else {
+          optImgHtml = `<label class="opt-img-upload" title="Añadir imagen"><input type="file" accept="image/*" onchange="handleOptImageUpload(event,${qi},${oi})">📷</label>`;
+        }
+        bodyHTML += `
+          <div class="option-row">
+            <span class="opt-letter">${opt.letter || String.fromCharCode(97+oi)}</span>
+            <input type="text" value="${escAttr(opt.text||'')}" placeholder="Texto de la opción" onchange="updateOpt(${qi},${oi},'text',this.value); renderEditorQuestions();">
+            ${optImgHtml}
+            <button class="correct-toggle ${opt.correct ? 'is-correct':''}" onclick="toggleCorrect(${qi},${oi})" title="Marcar como correcta">
+              ${opt.correct ? '✓':''}
+            </button>
+            <button class="remove-opt" onclick="removeOption(${qi},${oi})" title="Eliminar opción">✕</button>
+          </div>`;
+      });
+      bodyHTML += '</div>';
+      bodyHTML += `<button class="add-option-btn" onclick="addOption(${qi})" style="margin-top:10px">＋ Agregar opción</button>`;
+    }
+    bodyHTML += '</div>'; // end q-editor-fields
+    
+    // RIGHT COLUMN: PREVIEW
+    bodyHTML += '<div class="q-preview" style="flex:1; min-width:300px; background:var(--bg); padding:16px; border-radius:12px; border:1px solid var(--ring);">';
+    bodyHTML += '<h4 style="font-size:12px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; letter-spacing:0.5px;">Vista Previa</h4>';
+    bodyHTML += `<h3><span class="num" style="background:var(--accent);color:#fff;border-radius:5px;padding:2px 6px;font-size:13px;margin-right:6px;">${qi+1}</span> ${esc(q.title || q.text || 'Pregunta '+(qi+1))}</h3>`;
+    if(q.text) bodyHTML += `<p style="font-size:15px; color:var(--text); margin:8px 0;">${esc(q.text)}</p>`;
+    
+    if(q.image){
+      const imgW = q.imageWidth || 50;
+      bodyHTML += `<div style="max-width:${imgW}%; margin:10px auto; text-align:center;"><img src="${q.image}" style="max-width:100%; border-radius:8px; display:inline-block;"></div>`;
+    }
+    
+    if(q.latex){
+      bodyHTML += `<div id="prevLatex${qi}" style="margin:12px 0; font-size:1.2rem; padding:8px; background:var(--card); border-radius:8px; text-align:center;"></div>`;
+    }
+    
+    if(qType === 'radio' || qType === 'checkbox'){
+      (q.options || []).forEach((opt, oi) => {
+        const val = opt.letter || String.fromCharCode(97 + oi);
+        let optImgHtml = opt.image ? `<img src="${opt.image}" style="max-height:40px; margin-left:10px; border-radius:4px; vertical-align:middle;">` : '';
+        bodyHTML += `
+          <div style="margin-bottom:8px; padding:8px 12px; background:var(--card); border-radius:8px; border:1px solid var(--ring); display:flex; align-items:center;">
+            <input type="${qType}" disabled style="margin-right:10px; pointer-events:none;">
+            <span style="font-weight:600; margin-right:8px; color:var(--accent);">${val})</span>
+            <span style="color:var(--text);">${esc(opt.text||'')}</span>
+            ${optImgHtml}
+          </div>`;
+      });
+    }
+    
+    bodyHTML += '</div>'; // end q-preview
+
+    bodyHTML += '</div>'; // end q-body
+
+    card.innerHTML = headerHTML + bodyHTML;
+    list.appendChild(card);
+    
+    // Render latex for this question's preview
+    if(q.latex && typeof katex !== 'undefined'){
+      const el = document.getElementById('prevLatex'+qi);
+      if(el){
+        try{ katex.render(q.latex, el, {throwOnError:false}); }
+        catch(e){ el.textContent = q.latex; }
+      }
+    }
+  });
+  
+  const ptsEl = document.getElementById('editorTotalPts');
+  if(ptsEl) ptsEl.textContent = totalPts + ' pts';
+} // <--- SE RESTAURÓ LA LLAVE DE CIERRE QUE FALTABA
+
+// Equation logic simplified with MathLive
+
+function updateImageWidth(qi, val, parentEl){
+  editorQuestions[qi].imageWidth = parseInt(val);
+  // Update preview size
+  const preview = parentEl.previousElementSibling;
+  if(preview) preview.style.maxWidth = val + '%';
+  // Update label
+  const label = parentEl.querySelector('.size-val');
+  if(label) label.textContent = val + '%';
+}
+window.updateImageWidth = updateImageWidth;
+
+
+function addQuestion(){
+  editorQuestions.push({
+    title: 'Pregunta ' + (editorQuestions.length + 1),
+    type: 'radio',
+    points: 1,
+    text: '',
+    image: null,
+    imageWidth: 50,
+    latex: '',
+    options: [
+      {letter:'a', text:'', correct:false, image:null, match:''},
+      {letter:'b', text:'', correct:false, image:null, match:''},
+      {letter:'c', text:'', correct:false, image:null, match:''},
+      {letter:'d', text:'', correct:false, image:null, match:''}
+    ]
+  });
+  renderEditorQuestions();
+  // scroll to new question
+  const list = document.getElementById('questionsList');
+  setTimeout(()=> list.lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}), 100);
+}
+window.addQuestion = addQuestion;
+
+function removeQuestion(qi){
+  editorQuestions.splice(qi,1);
+  renderEditorQuestions();
+}
+window.removeQuestion = removeQuestion;
+
+function moveQuestion(qi, dir){
+  const ni = qi + dir;
+  if(ni < 0 || ni >= editorQuestions.length) return;
+  [editorQuestions[qi], editorQuestions[ni]] = [editorQuestions[ni], editorQuestions[qi]];
+  renderEditorQuestions();
+}
+window.moveQuestion = moveQuestion;
+
+function updateQ(qi, field, value){
+  editorQuestions[qi][field] = value;
+}
+window.updateQ = updateQ;
+
+function updateLatex(qi, value){
+  editorQuestions[qi].latex = value;
+  const el = document.getElementById('prevLatex'+qi);
+  if(el && typeof katex !== 'undefined'){
+    try{ katex.render(value, el, {throwOnError:false}); }
+    catch(e){ el.textContent = value; }
+  }
+}
+window.updateLatex = updateLatex;
+
+function handleImageUpload(event, qi){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){
+    toast('Imagen muy grande (máx 2 MB)','error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    editorQuestions[qi].image = e.target.result;
+    renderEditorQuestions();
+  };
+  reader.readAsDataURL(file);
+}
+window.handleImageUpload = handleImageUpload;
+
+function removeImage(qi){
+  editorQuestions[qi].image = null;
+  renderEditorQuestions();
+}
+window.removeImage = removeImage;
+
+function addOption(qi){
+  const opts = editorQuestions[qi].options;
+  const nextLetter = String.fromCharCode(97 + opts.length);
+  opts.push({letter:nextLetter, text:'', correct:false, image:null, match:''});
+  renderEditorQuestions();
+}
+window.addOption = addOption;
+
+function removeOption(qi, oi){
+  editorQuestions[qi].options.splice(oi,1);
+  // Re-letter
+  editorQuestions[qi].options.forEach((o,i) => o.letter = String.fromCharCode(97+i));
+  renderEditorQuestions();
+}
+window.removeOption = removeOption;
+
+function updateOpt(qi, oi, field, value){
+  editorQuestions[qi].options[oi][field] = value;
+}
+window.updateOpt = updateOpt;
+
+function toggleCorrect(qi, oi){
+  const q = editorQuestions[qi];
+  const qType = q.type || 'radio';
+  if(qType === 'radio'){
+    q.options.forEach((o, i) => o.correct = (i === oi));
+  } else {
+    // checkbox allows multiple
+    q.options[oi].correct = !q.options[oi].correct;
+  }
+  renderEditorQuestions();
+}
+window.toggleCorrect = toggleCorrect;
+
+function updateFillAnswer(qi, val){
+  if(!editorQuestions[qi].options || editorQuestions[qi].options.length === 0){
+    editorQuestions[qi].options = [{letter:'a', text:val, correct:true}];
+  } else {
+    editorQuestions[qi].options[0].text = val;
+  }
+}
+window.updateFillAnswer = updateFillAnswer;
+
+function handleOptImageUpload(event, qi, oi){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(file.size > 1024*1024){
+    toast('Imagen de opción muy grande (máx 1 MB)','error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    editorQuestions[qi].options[oi].image = e.target.result;
+    renderEditorQuestions();
+  };
+  reader.readAsDataURL(file);
+}
+window.handleOptImageUpload = handleOptImageUpload;
+
+function removeOptImage(qi, oi){
+  editorQuestions[qi].options[oi].image = null;
+  renderEditorQuestions();
+}
+window.removeOptImage = removeOptImage;
+
+// Drag & drop
+let dragIndex = null;
+function dragStart(e, qi){ dragIndex = qi; e.dataTransfer.effectAllowed='move'; }
+window.dragStart = dragStart;
+function dragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; }
+window.dragOver = dragOver;
+function dropQ(e, targetQi){
+  e.preventDefault();
+  if(dragIndex === null || dragIndex === targetQi) return;
+  const moved = editorQuestions.splice(dragIndex,1)[0];
+  editorQuestions.splice(targetQi,0,moved);
+  dragIndex = null;
+  renderEditorQuestions();
+}
+window.dropQ = dropQ;
+
+// =====================================================================
+//  SAVE EXAM
+// =====================================================================
+function saveExam(){
+  const name = document.getElementById('examName').value.trim();
+  const time = parseInt(document.getElementById('examTime').value) || 15;
+
+  if(!name){ toast('Escribe un nombre para el examen','error'); return; }
+  if(!editorQuestions.length){ toast('Agrega al menos una pregunta','error'); return; }
+
+  // Validate questions
+  for(let i=0; i<editorQuestions.length; i++){
+    const q = editorQuestions[i];
+    if(!q.text && !q.title){
+      toast(`La pregunta ${i+1} no tiene enunciado`,'error'); return;
+    }
+    if(!q.options || q.options.length < 2){
+      toast(`La pregunta ${i+1} necesita al menos 2 opciones`,'error'); return;
+    }
+    const hasCorrect = q.options.some(o => o.correct);
+    if(!hasCorrect){
+      toast(`Selecciona la respuesta correcta en la pregunta ${i+1}`,'error'); return;
+    }
+    const emptyOpt = q.options.findIndex(o => !(o.text||'').trim() && !o.image);
+    if(emptyOpt >= 0){
+      toast(`La opción ${String.fromCharCode(97+emptyOpt)}) en la pregunta ${i+1} debe tener texto o una imagen`,'error'); return;
+    }
+  }
+
+  DATA = loadData();
+
+  if(editingExamId){
+    // Update existing
+    const idx = DATA.exams.findIndex(e => e.id === editingExamId);
+    if(idx >= 0){
+      DATA.exams[idx].name = name;
+      DATA.exams[idx].timeMinutes = time;
+      DATA.exams[idx].questions = JSON.parse(JSON.stringify(editorQuestions));
+      DATA.exams[idx].updatedAt = new Date().toISOString();
+    }
+  } else {
+    // New exam
+    const isFirst = DATA.exams.length === 0;
+    DATA.exams.push({
+      id: uuid(),
+      name: name,
+      timeMinutes: time,
+      isDefault: isFirst, // first exam is default
+      createdAt: new Date().toISOString(),
+      questions: JSON.parse(JSON.stringify(editorQuestions))
+    });
+  }
+
+  saveData(DATA);
+  toast('Examen guardado correctamente','success');
+  showView('dashboard');
+}
+window.saveExam = saveExam;
+
+// =====================================================================
+//  SETTINGS
+// =====================================================================
+function loadSettings(){
+  DATA = loadData();
+  document.getElementById('setUser').value = DATA.adminCredentials?.user || 'admin';
+  document.getElementById('setPass').value = '';
+  document.getElementById('setSupabaseUrl').value = DATA.supabase?.url || '';
+  document.getElementById('setSupabaseKey').value = DATA.supabase?.key || '';
+  updateStorageUsed();
+}
+
+function saveCredentials(){
+  DATA = loadData();
+  const user = document.getElementById('setUser').value.trim();
+  const pass = document.getElementById('setPass').value;
+  if(!user){ toast('El usuario no puede estar vacío','error'); return; }
+  DATA.adminCredentials.user = user;
+  if(pass) DATA.adminCredentials.pass = pass;
+  saveData(DATA);
+  toast('Credenciales actualizadas','success');
+}
+window.saveCredentials = saveCredentials;
+
+function saveSupabaseConfig(){
+  DATA = loadData();
+  DATA.supabase = DATA.supabase || {};
+  DATA.supabase.url = document.getElementById('setSupabaseUrl').value.trim();
+  DATA.supabase.key = document.getElementById('setSupabaseKey').value.trim();
+  saveData(DATA);
+  toast('Configuración de Supabase actualizada','success');
+}
+window.saveSupabaseConfig = saveSupabaseConfig;
+
+function toggleAdminPass(){
+  const inp = document.getElementById('setPass');
+  const btn = inp.parentNode.querySelector('.toggle-pass');
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+window.toggleAdminPass = toggleAdminPass;
+
+function updateStorageUsed(){
+  const raw = localStorage.getItem(STORAGE_KEY) || '';
+  const bytes = new Blob([raw]).size;
+  const el = document.getElementById('storageUsed');
+  if(bytes < 1024) el.textContent = bytes + ' B';
+  else if(bytes < 1024*1024) el.textContent = (bytes/1024).toFixed(1) + ' KB';
+  else el.textContent = (bytes/(1024*1024)).toFixed(2) + ' MB';
+}
+
+function exportData(){
+  DATA = loadData();
+  const blob = new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pln_exams_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  toast('Datos exportados','success');
+}
+window.exportData = exportData;
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const imported = JSON.parse(e.target.result);
+      if(!imported.exams || !Array.isArray(imported.exams)){
+        throw new Error('Formato inválido');
+      }
+      // Merge: add imported exams
+      DATA = loadData();
+      imported.exams.forEach(ex => {
+        if(!DATA.exams.find(e => e.id === ex.id)){
+          DATA.exams.push(ex);
+        }
+      });
+      if(imported.adminCredentials){
+        DATA.adminCredentials = imported.adminCredentials;
+      }
+      saveData(DATA);
+      toast('Datos importados: ' + imported.exams.length + ' exámenes','success');
+      renderExamList();
+      loadSettings();
+    }catch(err){
+      toast('Error al importar: ' + err.message,'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+window.importData = importData;
+
+// =====================================================================
+//  UTILS
+// =====================================================================
+function esc(s){
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+function escAttr(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toast(msg, type='info'){
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = (type==='success'?'✅':type==='error'?'❌':'ℹ️') + ' ' + esc(msg);
+  wrap.appendChild(t);
+  setTimeout(()=>{
+    t.style.animation = 'slideOut .3s ease forwards';
+    setTimeout(()=> t.remove(), 300);
+  }, 3000);
+}
+
+function logout(){
+  sessionStorage.removeItem('pln_admin');
+  window.location.href = 'examen.html';
+}
+window.logout = logout;
+
+// =====================================================================
+//  INIT
+// =====================================================================
+renderExamList();
+
+})();
+</script>
+</body>
+</html>
