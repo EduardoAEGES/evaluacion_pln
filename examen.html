@@ -369,6 +369,11 @@
 (function(){
   // ⬇⬇⬇ PEGA AQUÍ LA URL DE TU WEB APP DE GOOGLE APPS SCRIPT ⬇⬇⬇
   const SHEET_URL = "https://script.google.com/macros/s/AKfycbxwsRdtbrPPHVRl34OoBOy707xWB-SOgfA-hPxjMSyrVcMUvYgWhUmSj5qIqsDS_YJ6/exec"
+  
+  // ⬇⬇⬇ PEGA AQUÍ TUS CREDENCIALES DE SUPABASE (Para carga directa) ⬇⬇⬇
+  const SUPABASE_URL = "https://yckucfrsflacgbsihxdb.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_qEE7l-JpVSBo6-azqVu6ww_OAW1dM2l";
+
   const STORAGE_KEY = 'pln_exams';
   const R = 28;
   const CIRC = 2 * Math.PI * R;    // 175.93
@@ -495,6 +500,39 @@
   }
 
   function loadQuestions(){
+    // 1. Intentar cargar desde Supabase directamente (Más rápido)
+    if(SUPABASE_URL && SUPABASE_KEY){
+      const tableUrl = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/pln_exams_data?id=eq.1&select=data';
+      fetch(tableUrl, {
+        method: 'GET',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      })
+      .then(r => r.json())
+      .then(res => {
+        if(res && res.length > 0 && res[0].data && res[0].data.exams){
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(res[0].data));
+          if(loadDefaultExam()){
+             loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas cargadas desde Supabase.';
+             loadState.style.color = 'var(--ok)';
+          }
+        } else {
+           fallbackToSheets();
+        }
+      })
+      .catch(e => {
+        console.error('Supabase fetch error:', e);
+        fallbackToSheets();
+      });
+      return;
+    }
+    
+    fallbackToSheets();
+  }
+
+  function fallbackToSheets(){
     if(SHEET_URL && SHEET_URL.indexOf('PEGA_AQUI') < 0){
       fetch(SHEET_URL, { method:'GET' })
         .then(r => r.json())
@@ -503,7 +541,7 @@
             // Sincronizar caché local con la nube
             localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
             if(loadDefaultExam()){
-              loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas cargadas desde la nube.';
+              loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas cargadas desde la nube (Sheets).';
               loadState.style.color = 'var(--ok)';
             }
           } else if(res.ok && res.questions) {

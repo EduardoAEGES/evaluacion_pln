@@ -618,7 +618,10 @@ function defaultData(){
   return {
     exams: [],
     adminCredentials: { user:'admin', pass:'admin123' },
-    supabase: { url: '', key: '' }
+    supabase: { 
+      url: 'https://yckucfrsflacgbsihxdb.supabase.co', 
+      key: 'sb_publishable_qEE7l-JpVSBo6-azqVu6ww_OAW1dM2l' 
+    }
   };
 }
 
@@ -631,6 +634,16 @@ function uuid(){
 }
 
 let DATA = loadData();
+
+// Autocompletar credenciales de Supabase si están vacías
+if(!DATA.supabase || !DATA.supabase.url) {
+  DATA.supabase = {
+    url: 'https://yckucfrsflacgbsihxdb.supabase.co',
+    key: 'sb_publishable_qEE7l-JpVSBo6-azqVu6ww_OAW1dM2l'
+  };
+  saveData(DATA);
+}
+
 let editingExamId = null; // null = new exam
 let editorQuestions = [];  // in-memory questions while editing
 
