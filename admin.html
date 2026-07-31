@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://unpkg.com/mathlive"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#f8fafc;
@@ -625,8 +626,31 @@ function defaultData(){
   };
 }
 
+let globalSupabaseClient = null;
+function syncDataToCloud(dataToSync) {
+  if(dataToSync.supabase && dataToSync.supabase.url && dataToSync.supabase.key) {
+    try {
+      if (!globalSupabaseClient) {
+        globalSupabaseClient = window.supabase.createClient(dataToSync.supabase.url, dataToSync.supabase.key);
+      }
+      globalSupabaseClient.from('pln_exams_data').upsert({ id: 1, data: dataToSync })
+        .then(({error}) => { if(error) console.error('Supabase error', error); });
+    } catch(err) {
+      console.error('Supabase init error', err);
+    }
+  }
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbxwsRdtbrPPHVRl34OoBOy707xWB-SOgfA-hPxjMSyrVcMUvYgWhUmSj5qIqsDS_YJ6/exec";
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'saveExams', data: dataToSync })
+  }).catch(e => console.error('Sheets error', e));
+}
+
 function saveData(data){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  syncDataToCloud(data);
 }
 
 function uuid(){
@@ -635,14 +659,12 @@ function uuid(){
 
 let DATA = loadData();
 
-// Autocompletar credenciales de Supabase si están vacías
-if(!DATA.supabase || !DATA.supabase.url) {
-  DATA.supabase = {
-    url: 'https://yckucfrsflacgbsihxdb.supabase.co',
-    key: 'sb_publishable_qEE7l-JpVSBo6-azqVu6ww_OAW1dM2l'
-  };
-  saveData(DATA);
-}
+// Forzar siempre la credencial correcta de Supabase para evitar errores 401 por caché antiguo
+DATA.supabase = {
+  url: 'https://yckucfrsflacgbsihxdb.supabase.co',
+  key: 'sb_publishable_qEE7l-JpVSBo6-azqVu6ww_OAW1dM2l'
+};
+saveData(DATA);
 
 let editingExamId = null; // null = new exam
 let editorQuestions = [];  // in-memory questions while editing
@@ -715,6 +737,7 @@ function renderExamList(){
   html += '</div>';
   container.innerHTML = html;
 }
+window.renderExamList = renderExamList;
 
 // =====================================================================
 //  EXAM ACTIONS
@@ -961,6 +984,7 @@ function renderEditorQuestions(){
   const ptsEl = document.getElementById('editorTotalPts');
   if(ptsEl) ptsEl.textContent = totalPts + ' pts';
 } // <--- SE RESTAURÓ LA LLAVE DE CIERRE QUE FALTABA
+window.renderEditorQuestions = renderEditorQuestions;
 
 // Equation logic simplified with MathLive
 
@@ -1185,32 +1209,7 @@ function saveExam(){
   }
 
   saveData(DATA);
-  toast('Examen guardado localmente, sincronizando...', 'success');
-
-  // Sincronizar a Supabase
-  if(DATA.supabase && DATA.supabase.url && DATA.supabase.key) {
-    const tableUrl = DATA.supabase.url.replace(/\/$/, '') + '/rest/v1/pln_exams_data';
-    fetch(tableUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': DATA.supabase.key,
-        'Authorization': 'Bearer ' + DATA.supabase.key,
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({ id: 1, data: DATA })
-    }).catch(e => console.error('Supabase error', e));
-  }
-
-  // Sincronizar a Google Sheets
-  const SHEET_URL = "https://script.google.com/macros/s/AKfycbxwsRdtbrPPHVRl34OoBOy707xWB-SOgfA-hPxjMSyrVcMUvYgWhUmSj5qIqsDS_YJ6/exec";
-  fetch(SHEET_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'saveExams', data: DATA })
-  }).catch(e => console.error('Sheets error', e));
-
+  toast('Examen guardado correctamente', 'success');
   showView('dashboard');
 }
 window.saveExam = saveExam;
