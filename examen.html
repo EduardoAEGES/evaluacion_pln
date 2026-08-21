@@ -182,6 +182,34 @@
 
   .locked{opacity:.6;pointer-events:none;filter:grayscale(.3)}
 
+  /* ---------- Autocomplete ---------- */
+  .autocomplete-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--ring);
+    border-radius: 8px;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    margin-top: 4px;
+  }
+  .autocomplete-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--ring);
+    font-size: 13px;
+    text-align: left;
+    color: var(--text);
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover { background: var(--card2); color: var(--accent); }
+  .field { position: relative; }
+
   /* ---------- Login ---------- */
   .login{
     max-width:440px;margin:8vh auto 0;
@@ -283,10 +311,26 @@
       <label for="li-apellidos">Apellidos</label>
       <input type="text" id="li-apellidos" placeholder="Ej: Pérez García" required>
     </div>
-    <div class="field" id="fieldNRC">
-      <label for="li-nrc">NRC</label>
-      <input type="text" id="li-nrc" placeholder="Ej: 12345" inputmode="numeric" required>
+    <div class="field" id="fieldSearchCurso">
+      <label for="li-search">Curso</label>
+      <input type="text" id="li-search" placeholder="Buscar por docente o NRC..." autocomplete="off">
+      <div id="search-results" class="autocomplete-results"></div>
     </div>
+
+    <!-- Selected Course Info Box -->
+    <div id="selectedCourseInfo" style="display:none; background:var(--card2); border:1px solid var(--accent); border-radius:10px; padding:12px; margin-bottom:14px; text-align:left; font-size:13px; color:var(--text); animation:rise .3s ease;">
+      <div style="font-weight:800; color:var(--accent2); margin-bottom:6px;" id="info-docente"></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
+        <div><b>NRC:</b> <span id="info-nrc"></span></div>
+        <div><b>Sección:</b> <span id="info-seccion"></span></div>
+      </div>
+      <div style="font-size:12px;"><b>Horario:</b> <span id="info-horario"></span></div>
+      <button type="button" style="margin-top:10px; background:var(--danger); border:none; color:#fff; border-radius:6px; font-size:11px; cursor:pointer; font-weight:700; padding:6px 12px; transition:.15s;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'" onclick="clearCourseSelection()">Cambiar curso</button>
+    </div>
+
+    <input type="hidden" id="li-nrc">
+    <input type="hidden" id="li-docente">
+    <input type="hidden" id="li-seccion">
 
     <!-- Admin Login Fields (hidden by default) -->
     <div class="field" id="fieldUser" style="display:none">
@@ -347,6 +391,8 @@
     <input type="hidden" name="nombres">
     <input type="hidden" name="apellidos">
     <input type="hidden" name="nrc">
+    <input type="hidden" name="docente">
+    <input type="hidden" name="seccion">
 
     <!-- Las preguntas se cargan dinámicamente -->
     <div id="questions"></div>
@@ -421,14 +467,20 @@
     // Toggle fields
     document.getElementById('fieldNombres').style.display = isAdmin ? 'none' : 'block';
     document.getElementById('fieldApellidos').style.display = isAdmin ? 'none' : 'block';
-    document.getElementById('fieldNRC').style.display = isAdmin ? 'none' : 'block';
+    if(isAdmin) {
+      document.getElementById('fieldSearchCurso').style.display = 'none';
+      document.getElementById('selectedCourseInfo').style.display = 'none';
+    } else {
+      const hasNrc = !!document.getElementById('li-nrc').value;
+      document.getElementById('fieldSearchCurso').style.display = hasNrc ? 'none' : 'block';
+      document.getElementById('selectedCourseInfo').style.display = hasNrc ? 'block' : 'none';
+    }
     document.getElementById('fieldUser').style.display = isAdmin ? 'block' : 'none';
     document.getElementById('fieldPass').style.display = isAdmin ? 'block' : 'none';
 
     // Toggle required
     document.getElementById('li-nombres').required = !isAdmin;
     document.getElementById('li-apellidos').required = !isAdmin;
-    document.getElementById('li-nrc').required = !isAdmin;
     document.getElementById('li-user').required = isAdmin;
     document.getElementById('li-pass').required = isAdmin;
 
@@ -678,7 +730,7 @@
 
   let tick = null;
 
-  function startExam(nombres, apellidos, nrc){
+  function startExam(nombres, apellidos, nrc, docente, seccion){
     const isPreviewMode = new URLSearchParams(window.location.search).has('preview');
     if(isPreviewMode) {
       const btn = document.getElementById('closePreviewBtn');
@@ -688,6 +740,8 @@
     form.querySelector('[name="nombres"]').value = nombres;
     form.querySelector('[name="apellidos"]').value = apellidos;
     form.querySelector('[name="nrc"]').value = nrc;
+    if(form.querySelector('[name="docente"]')) form.querySelector('[name="docente"]').value = docente;
+    if(form.querySelector('[name="seccion"]')) form.querySelector('[name="seccion"]').value = seccion;
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('examArea').style.display = 'block';
     render();
@@ -743,12 +797,14 @@
     const n = document.getElementById('li-nombres').value.trim();
     const a = document.getElementById('li-apellidos').value.trim();
     const nrc = document.getElementById('li-nrc').value.trim();
+    const doc = document.getElementById('li-docente').value.trim();
+    const sec = document.getElementById('li-seccion').value.trim();
     if(n.length < 2 || a.length < 2){
       err.textContent = 'Ingresa tus nombres y apellidos completos.';
       return;
     }
-    if(nrc.length < 3){
-      err.textContent = 'Ingresa un NRC válido.';
+    if(!nrc || !sec || !doc){
+      err.textContent = 'Por favor busca y selecciona un curso válido.';
       return;
     }
     if(!questionsReady){
@@ -756,7 +812,7 @@
       return;
     }
     err.textContent = '';
-    startExam(n, a, nrc);
+    startExam(n, a, nrc, doc, sec);
   });
 
   // Resaltar opción seleccionada y validar al instante en Vista Previa
@@ -981,8 +1037,115 @@
   // Auto-iniciar si es vista previa
   const urlParams = new URLSearchParams(window.location.search);
   if(urlParams.get('preview') && questionsReady) {
-    startExam('Profesor', '(Vista Previa)', '00000');
+    startExam('Profesor', '(Vista Previa)', '00000', '', '');
   }
+
+  // =====================================================================
+  //  SECCIONES AUTOCOMPLETE
+  // =====================================================================
+  let seccionesData = [];
+  const SHEET_SECCIONES_ONLINE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQFvhOynKKNE-nyRXm9kDd5GLvVYsiCBhYCBDvL8VG5mk6T811f5WyFlvHANWw3vjVuZyA7Q-X3nTr/pub?output=csv&gid=198341064';
+  const SHEET_SECCIONES_LOCAL = 'Base de dato de prueba - Secciones.csv';
+
+  function parseCSVData(text) {
+    const lines = text.split('\n');
+    if (lines.length < 2) return;
+    const headers = lines[0].split(',').map(h => h.trim());
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+      const obj = {};
+      headers.forEach((h, j) => obj[h] = row[j]);
+      seccionesData.push(obj);
+    }
+  }
+
+  async function loadSecciones() {
+    try {
+      // 1. Intentar archivo local primero (rápido y offline si está en mismo server)
+      const resLocal = await fetch(SHEET_SECCIONES_LOCAL);
+      if (!resLocal.ok) throw new Error('Local falló');
+      const textLocal = await resLocal.text();
+      parseCSVData(textLocal);
+    } catch(e) {
+      console.log('No se pudo cargar CSV local, intentando online...', e.message);
+      try {
+        // 2. Si falla (ej. ejecutado directo como file://), usar online
+        const resOnline = await fetch(SHEET_SECCIONES_ONLINE);
+        const textOnline = await resOnline.text();
+        parseCSVData(textOnline);
+      } catch (err) {
+        console.error("Error al cargar secciones:", err);
+      }
+    }
+  }
+  loadSecciones();
+
+  const inputSearch = document.getElementById('li-search');
+  const resSearch = document.getElementById('search-results');
+  const selectedInfo = document.getElementById('selectedCourseInfo');
+  const fieldSearch = document.getElementById('fieldSearchCurso');
+  
+  const hNrc = document.getElementById('li-nrc');
+  const hDoc = document.getElementById('li-docente');
+  const hSec = document.getElementById('li-seccion');
+
+  window.clearCourseSelection = function() {
+    hNrc.value = '';
+    hDoc.value = '';
+    hSec.value = '';
+    inputSearch.value = '';
+    selectedInfo.style.display = 'none';
+    fieldSearch.style.display = 'block';
+    inputSearch.focus();
+  };
+
+  inputSearch.addEventListener('input', function(e) {
+    const val = e.target.value.toLowerCase().trim();
+    resSearch.innerHTML = '';
+    if (!val) { resSearch.style.display = 'none'; return; }
+    
+    // Search by NRC or Docente
+    const matches = seccionesData.filter(d => {
+      const nrc = (d['NRC'] || '').toLowerCase();
+      const doc = (d['Nombres y Apellidos'] || '').toLowerCase();
+      return nrc.includes(val) || doc.includes(val);
+    });
+    
+    if (matches.length > 0) {
+      matches.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        const horarioText = (m['HORARIO (DÍAS)'] || '') + ' ' + (m['HORARIO (HORAS)'] || '');
+        
+        div.innerHTML = `<b>${m['NRC']}</b> - ${m['Nombres y Apellidos']}<br><span style="color:var(--muted); font-size:11px;">Sec: ${m['Sección']} | ${horarioText}</span>`;
+        
+        div.onclick = () => {
+          hNrc.value = m['NRC'];
+          hDoc.value = m['Nombres y Apellidos'];
+          hSec.value = m['Sección'];
+          
+          document.getElementById('info-docente').textContent = m['Nombres y Apellidos'];
+          document.getElementById('info-nrc').textContent = m['NRC'];
+          document.getElementById('info-seccion').textContent = m['Sección'];
+          document.getElementById('info-horario').textContent = horarioText;
+          
+          resSearch.style.display = 'none';
+          fieldSearch.style.display = 'none';
+          selectedInfo.style.display = 'block';
+        };
+        resSearch.appendChild(div);
+      });
+      resSearch.style.display = 'block';
+    } else {
+      resSearch.style.display = 'none';
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (e.target && !e.target.closest('#fieldSearchCurso')) resSearch.style.display = 'none';
+  });
+
 })();
 </script>
 </body>
