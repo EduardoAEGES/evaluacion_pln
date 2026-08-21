@@ -219,11 +219,11 @@
     text-align:center;animation:rise .4s ease;
   }
   .login .logo{
-    width:64px;height:64px;margin:0 auto 16px;border-radius:16px;
-    background:linear-gradient(135deg,var(--accent2),var(--accent));
-    display:flex;align-items:center;justify-content:center;font-size:30px;
-    box-shadow:0 6px 20px rgba(0,39,82,.2);
-    color: #fff;
+    height:70px;margin:0 auto 16px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .login .logo img {
+    max-height:100%; object-fit:contain;
   }
   .login h2{margin:0 0 4px;font-size:22px}
   .login p.login-sub{margin:0 0 22px;color:var(--muted);font-size:13px}
@@ -290,7 +290,7 @@
 
 <!-- ===== LOGIN ===== -->
 <div class="login" id="loginScreen">
-  <div class="logo">📝</div>
+  <div class="logo"><img src="LOGO_CERTUS.png" alt="CERTUS"></div>
   <h2>Examen de PLN</h2>
   <p class="login-sub" id="loginSubtitle">Ingresa tus datos para comenzar la evaluación</p>
 
@@ -489,9 +489,6 @@
     document.getElementById('loginSubtitle').textContent = isAdmin
       ? 'Ingresa con tus credenciales de administrador'
       : 'Ingresa tus datos para comenzar la evaluación';
-
-    // Update logo emoji
-    document.querySelector('.login .logo').textContent = isAdmin ? '🔐' : '📝';
 
     // Hide load state for admin
     loadState.style.display = isAdmin ? 'none' : 'block';
