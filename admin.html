@@ -673,7 +673,7 @@ let editorQuestions = [];  // in-memory questions while editing
 //  AUTH CHECK
 // =====================================================================
 if(sessionStorage.getItem('pln_admin') !== 'true'){
-  window.location.href = 'examen.html';
+  window.location.href = 'index.html';
 }
 
 // =====================================================================
@@ -728,7 +728,7 @@ function renderExamList(){
         </div>
         <div class="card-actions">
           <button class="btn btn-sm btn-secondary" onclick="editExam('${ex.id}')">✏️ Editar</button>
-          <a class="btn btn-sm btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center;" href="examen.html?preview=${ex.id}" target="_blank">👁️ Vista Previa</a>
+          <a class="btn btn-sm btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center;" href="index.html?preview=${ex.id}" target="_blank">👁️ Vista Previa</a>
           <button class="btn btn-sm btn-secondary" onclick="duplicateExam('${ex.id}')">📋 Duplicar</button>
           <button class="btn btn-sm btn-danger" onclick="openDeleteModal('${ex.id}')">🗑</button>
         </div>
@@ -1334,7 +1334,7 @@ function toast(msg, type='info'){
 
 function logout(){
   sessionStorage.removeItem('pln_admin');
-  window.location.href = 'examen.html';
+  window.location.href = 'index.html';
 }
 window.logout = logout;
 
