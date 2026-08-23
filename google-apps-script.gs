@@ -5,11 +5,16 @@
  *  - doPost() -> GUARDA los resultados del estudiante en la pestaña con el nombre del examen.
  */
 
-// ================= LEER PREGUNTAS =================
+// ================= LEER PREGUNTAS / SECCIONES =================
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
+
+    // --- Lectura de la pestaña "Secciones" (base de NRC y docentes EN VIVO) ---
+    if (e && e.parameter && e.parameter.type === 'secciones') {
+      return getSecciones(ss);
+    }
+
     // Primero intentar leer la estructura JSON centralizada desde BD_Examenes
     var sheetData = ss.getSheetByName('BD_Examenes');
     if (sheetData) {
@@ -136,6 +141,34 @@ function doPost(e) {
   } catch (err) {
     return jsonOut({ ok: false, error: err.toString() });
   }
+}
+
+// ================= LEER PESTAÑA "SECCIONES" =================
+// Devuelve todas las filas como objetos {Header: valor}, tomando SIEMPRE
+// los datos actuales de la pestaña "Secciones" del spreadsheet activo.
+function getSecciones(ss) {
+  var sheet = ss.getSheetByName('Secciones');
+  if (!sheet) {
+    return jsonOut({ ok: false, error: 'No existe la pestaña "Secciones".' });
+  }
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) {
+    return jsonOut({ ok: true, secciones: [] });
+  }
+  var headers = values[0].map(function (h) { return String(h).trim(); });
+  var rows = [];
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    // Omitir filas totalmente vacías
+    var vacia = row.every(function (c) { return String(c).trim() === ''; });
+    if (vacia) continue;
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      obj[headers[j]] = row[j] == null ? '' : String(row[j]).trim();
+    }
+    rows.push(obj);
+  }
+  return jsonOut({ ok: true, secciones: rows });
 }
 
 function jsonOut(obj) {

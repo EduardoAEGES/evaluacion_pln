@@ -1058,22 +1058,42 @@
   }
 
   async function loadSecciones() {
+    // 1. PRIORIDAD: leer la pestaña "Secciones" EN VIVO desde el Apps Script.
+    //    Así siempre usa la base de datos actual (no una copia congelada).
+    if (SHEET_URL && SHEET_URL.indexOf('PEGA_AQUI') < 0) {
+      try {
+        const res = await fetch(SHEET_URL + '?type=secciones');
+        const json = await res.json();
+        if (json.ok && Array.isArray(json.secciones) && json.secciones.length) {
+          seccionesData = json.secciones;
+          console.log('Secciones cargadas EN VIVO desde la pestaña Secciones:', seccionesData.length);
+          return;
+        }
+        throw new Error(json.error || 'Respuesta sin secciones');
+      } catch (e) {
+        console.log('No se pudo leer Secciones en vivo, uso respaldo...', e.message);
+      }
+    }
+    // 2. Respaldo: CSV publicado online.
     try {
-      // 1. Intentar archivo local primero (rápido y offline si está en mismo server)
+      const resOnline = await fetch(SHEET_SECCIONES_ONLINE);
+      if (!resOnline.ok) throw new Error('Online falló');
+      const textOnline = await resOnline.text();
+      parseCSVData(textOnline);
+      console.log('Secciones cargadas desde CSV online (respaldo).');
+      return;
+    } catch (err) {
+      console.log('CSV online falló, uso CSV local...', err.message);
+    }
+    // 3. Último respaldo: CSV local (puede estar desactualizado).
+    try {
       const resLocal = await fetch(SHEET_SECCIONES_LOCAL);
       if (!resLocal.ok) throw new Error('Local falló');
       const textLocal = await resLocal.text();
       parseCSVData(textLocal);
-    } catch(e) {
-      console.log('No se pudo cargar CSV local, intentando online...', e.message);
-      try {
-        // 2. Si falla (ej. ejecutado directo como file://), usar online
-        const resOnline = await fetch(SHEET_SECCIONES_ONLINE);
-        const textOnline = await resOnline.text();
-        parseCSVData(textOnline);
-      } catch (err) {
-        console.error("Error al cargar secciones:", err);
-      }
+      console.log('Secciones cargadas desde CSV local (respaldo, puede estar desactualizado).');
+    } catch (e) {
+      console.error('Error al cargar secciones (todas las fuentes fallaron):', e);
     }
   }
   loadSecciones();
