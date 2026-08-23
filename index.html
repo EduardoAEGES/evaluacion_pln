@@ -208,7 +208,52 @@
   }
   .autocomplete-item:last-child { border-bottom: none; }
   .autocomplete-item:hover { background: var(--card2); color: var(--accent); }
+  .autocomplete-item .nrc-big{ font-weight:800; font-size:15px; color:var(--accent2); letter-spacing:.5px; }
+  .autocomplete-item:hover .nrc-big{ color:var(--accent); }
   .field { position: relative; }
+
+  /* ---------- Tarjeta de curso seleccionado ---------- */
+  .course-card{
+    background:linear-gradient(135deg,#ffffff 0%,#f0f9ff 100%);
+    border:1px solid var(--accent);
+    border-radius:14px;
+    padding:16px 18px;
+    margin-bottom:16px;
+    text-align:left;
+    box-shadow:0 8px 24px rgba(0,148,217,.12);
+    animation:rise .3s ease;
+  }
+  .course-card-head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .course-check{
+    width:20px;height:20px;border-radius:50%;
+    background:var(--ok);color:#fff;font-size:12px;font-weight:800;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .course-tag{
+    font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--ok);
+  }
+  .course-docente{
+    font-weight:800;font-size:16px;color:var(--accent2);
+    line-height:1.3;margin-bottom:14px;
+  }
+  .course-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .course-cell{
+    background:#fff;border:1px solid var(--ring);border-radius:10px;
+    padding:9px 12px;display:flex;flex-direction:column;gap:2px;
+  }
+  .course-cell-lbl{
+    font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);
+  }
+  .course-cell-val{ font-size:14px;font-weight:700;color:var(--text); }
+  .course-horario .course-cell-val{ font-size:12px;font-weight:600;line-height:1.4; }
+  .course-change{
+    margin-top:14px;width:100%;
+    background:transparent;border:1px solid var(--ring);color:var(--muted);
+    border-radius:9px;font-size:12px;cursor:pointer;font-weight:700;padding:9px;
+    transition:.15s;
+  }
+  .course-change:hover{ border-color:var(--danger);color:var(--danger); background:#fef2f2; }
 
   /* ---------- Login ---------- */
   .login{
@@ -312,20 +357,33 @@
       <input type="text" id="li-apellidos" placeholder="Ej: Pérez García" required>
     </div>
     <div class="field" id="fieldSearchCurso">
-      <label for="li-search">Curso</label>
-      <input type="text" id="li-search" placeholder="Buscar por docente o NRC..." autocomplete="off">
+      <label for="li-search">NRC</label>
+      <input type="text" id="li-search" placeholder="Escribe tu NRC..." autocomplete="off" inputmode="numeric">
       <div id="search-results" class="autocomplete-results"></div>
     </div>
 
     <!-- Selected Course Info Box -->
-    <div id="selectedCourseInfo" style="display:none; background:var(--card2); border:1px solid var(--accent); border-radius:10px; padding:12px; margin-bottom:14px; text-align:left; font-size:13px; color:var(--text); animation:rise .3s ease;">
-      <div style="font-weight:800; color:var(--accent2); margin-bottom:6px;" id="info-docente"></div>
-      <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
-        <div><b>NRC:</b> <span id="info-nrc"></span></div>
-        <div><b>Sección:</b> <span id="info-seccion"></span></div>
+    <div id="selectedCourseInfo" class="course-card" style="display:none;">
+      <div class="course-card-head">
+        <span class="course-check">✓</span>
+        <span class="course-tag">Curso seleccionado</span>
       </div>
-      <div style="font-size:12px;"><b>Horario:</b> <span id="info-horario"></span></div>
-      <button type="button" style="margin-top:10px; background:var(--danger); border:none; color:#fff; border-radius:6px; font-size:11px; cursor:pointer; font-weight:700; padding:6px 12px; transition:.15s;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'" onclick="clearCourseSelection()">Cambiar curso</button>
+      <div class="course-docente" id="info-docente"></div>
+      <div class="course-grid">
+        <div class="course-cell">
+          <span class="course-cell-lbl">NRC</span>
+          <span class="course-cell-val" id="info-nrc"></span>
+        </div>
+        <div class="course-cell">
+          <span class="course-cell-lbl">Sección</span>
+          <span class="course-cell-val" id="info-seccion"></span>
+        </div>
+      </div>
+      <div class="course-cell course-horario">
+        <span class="course-cell-lbl">Horario</span>
+        <span class="course-cell-val" id="info-horario"></span>
+      </div>
+      <button type="button" class="course-change" onclick="clearCourseSelection()">↺ Cambiar NRC</button>
     </div>
 
     <input type="hidden" id="li-nrc">
@@ -1122,31 +1180,40 @@
     resSearch.innerHTML = '';
     if (!val) { resSearch.style.display = 'none'; return; }
     
-    // Search by NRC or Docente
+    // Buscar SOLO por NRC (por confidencialidad no se busca ni se muestra el docente)
     const matches = seccionesData.filter(d => {
       const nrc = (d['NRC'] || '').toLowerCase();
-      const doc = (d['Nombres y Apellidos'] || '').toLowerCase();
-      return nrc.includes(val) || doc.includes(val);
+      return nrc.includes(val);
     });
-    
-    if (matches.length > 0) {
-      matches.forEach(m => {
+
+    // Quitar NRC repetidos para una lista limpia
+    const vistos = new Set();
+    const unicos = matches.filter(m => {
+      const nrc = m['NRC'] || '';
+      if (vistos.has(nrc)) return false;
+      vistos.add(nrc);
+      return true;
+    });
+
+    if (unicos.length > 0) {
+      unicos.slice(0, 30).forEach(m => {
         const div = document.createElement('div');
         div.className = 'autocomplete-item';
-        const horarioText = (m['HORARIO (DÍAS)'] || '') + ' ' + (m['HORARIO (HORAS)'] || '');
-        
-        div.innerHTML = `<b>${m['NRC']}</b> - ${m['Nombres y Apellidos']}<br><span style="color:var(--muted); font-size:11px;">Sec: ${m['Sección']} | ${horarioText}</span>`;
-        
+        // Solo se muestra el NRC en los resultados
+        div.innerHTML = `<span class="nrc-big">${m['NRC']}</span>`;
+
         div.onclick = () => {
+          const horarioText = (m['HORARIO (DÍAS)'] || '') + ' ' + (m['HORARIO (HORAS)'] || '');
           hNrc.value = m['NRC'];
           hDoc.value = m['Nombres y Apellidos'];
           hSec.value = m['Sección'];
-          
-          document.getElementById('info-docente').textContent = m['Nombres y Apellidos'];
-          document.getElementById('info-nrc').textContent = m['NRC'];
-          document.getElementById('info-seccion').textContent = m['Sección'];
-          document.getElementById('info-horario').textContent = horarioText;
-          
+
+          // Los datos del docente/sección/horario recién aparecen al elegir
+          document.getElementById('info-docente').textContent = m['Nombres y Apellidos'] || '—';
+          document.getElementById('info-nrc').textContent = m['NRC'] || '—';
+          document.getElementById('info-seccion').textContent = m['Sección'] || '—';
+          document.getElementById('info-horario').textContent = horarioText.trim() || '—';
+
           resSearch.style.display = 'none';
           fieldSearch.style.display = 'none';
           selectedInfo.style.display = 'block';
