@@ -255,6 +255,28 @@
   }
   .course-change:hover{ border-color:var(--danger);color:var(--danger); background:#fef2f2; }
 
+  /* ---------- Mini horario semanal ---------- */
+  .mini-horario{ margin-top:4px; }
+  .mh-title{ display:block; margin-bottom:8px; }
+  .mh-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:5px; }
+  .mh-day{ display:flex; flex-direction:column; gap:4px; }
+  .mh-dayname{
+    font-size:10px;font-weight:800;text-align:center;color:var(--muted);
+    letter-spacing:.5px;text-transform:uppercase;
+  }
+  .mh-slot{
+    min-height:50px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:5px 3px;font-size:10px;font-weight:700;line-height:1.3;
+  }
+  .mh-slot.on{ color:#fff; box-shadow:0 3px 9px rgba(0,0,0,.18); }
+  .mh-slot.off{
+    background:var(--card2);color:#cbd5e1;border:1px dashed var(--ring);
+    font-size:13px;
+  }
+  .mh-time{ display:block; font-size:9.5px; font-weight:800; }
+  .mh-mod{ display:block; font-size:8px; font-weight:700; opacity:.85; margin-top:2px; }
+
   /* ---------- Login ---------- */
   .login{
     max-width:440px;margin:8vh auto 0;
@@ -368,7 +390,6 @@
         <span class="course-check">✓</span>
         <span class="course-tag">Curso seleccionado</span>
       </div>
-      <div class="course-docente" id="info-docente"></div>
       <div class="course-grid">
         <div class="course-cell">
           <span class="course-cell-lbl">NRC</span>
@@ -379,9 +400,9 @@
           <span class="course-cell-val" id="info-seccion"></span>
         </div>
       </div>
-      <div class="course-cell course-horario">
-        <span class="course-cell-lbl">Horario</span>
-        <span class="course-cell-val" id="info-horario"></span>
+      <div class="mini-horario">
+        <span class="course-cell-lbl mh-title">Horario de la sección</span>
+        <div class="mh-grid" id="info-horario-grid"></div>
       </div>
       <button type="button" class="course-change" onclick="clearCourseSelection()">↺ Cambiar NRC</button>
     </div>
@@ -1175,6 +1196,67 @@
     inputSearch.focus();
   };
 
+  // Construye un mini horario semanal (Lun–Sáb) SOLO con la sección del NRC elegido
+  const DIAS_SEMANA = [
+    { key:'LUNES',     label:'Lun', color:'#0094d9' },
+    { key:'MARTES',    label:'Mar', color:'#7c3aed' },
+    { key:'MIERCOLES', label:'Mié', color:'#059669' },
+    { key:'JUEVES',    label:'Jue', color:'#d97706' },
+    { key:'VIERNES',   label:'Vie', color:'#db2777' },
+    { key:'SABADO',    label:'Sáb', color:'#0891b2' }
+  ];
+
+  function normDia(s){
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+  }
+
+  function buildMiniHorario(m){
+    const grid = document.getElementById('info-horario-grid');
+    grid.innerHTML = '';
+
+    // Extraer tokens entre paréntesis: días y horas se emparejan por posición
+    const dias  = (m['HORARIO (DÍAS)']  || '').match(/\(([^)]*)\)/g) || [];
+    const horas = (m['HORARIO (HORAS)'] || '').match(/\(([^)]*)\)/g) || [];
+
+    const mapa = {};   // { LUNES: {time, mod}, ... }
+    dias.forEach((d, i) => {
+      const dia = normDia(d.replace(/[()]/g,''));
+      let raw = (horas[i] || '').replace(/[()]/g,'').trim();     // ej: "PRE 07:00-10:45"
+      const modMatch = raw.match(/^([A-Za-zÁÉÍÓÚ]+)\s+/);
+      const mod = modMatch ? modMatch[1].toUpperCase() : '';
+      const time = raw.replace(/^[A-Za-zÁÉÍÓÚ]+\s+/, '').trim(); // ej: "07:00-10:45"
+      if(dia) mapa[dia] = { time, mod };
+    });
+
+    DIAS_SEMANA.forEach(d => {
+      const col = document.createElement('div');
+      col.className = 'mh-day';
+      const info = mapa[d.key];
+      if(info){
+        col.innerHTML =
+          '<span class="mh-dayname">'+d.label+'</span>' +
+          '<div class="mh-slot on" style="background:linear-gradient(135deg,'+d.color+','+shade(d.color)+')">' +
+            '<span><span class="mh-time">'+esc(info.time || '—')+'</span>' +
+            (info.mod ? '<span class="mh-mod">'+esc(info.mod)+'</span>' : '') +
+            '</span></div>';
+      } else {
+        col.innerHTML =
+          '<span class="mh-dayname">'+d.label+'</span>' +
+          '<div class="mh-slot off">·</div>';
+      }
+      grid.appendChild(col);
+    });
+  }
+
+  // Oscurece ligeramente un color hex para el degradado
+  function shade(hex){
+    const n = parseInt(hex.slice(1), 16);
+    const r = Math.max(0, (n>>16) - 30);
+    const g = Math.max(0, ((n>>8)&255) - 30);
+    const b = Math.max(0, (n&255) - 30);
+    return 'rgb('+r+','+g+','+b+')';
+  }
+
   inputSearch.addEventListener('input', function(e) {
     const val = e.target.value.toLowerCase().trim();
     resSearch.innerHTML = '';
@@ -1203,16 +1285,14 @@
         div.innerHTML = `<span class="nrc-big">${m['NRC']}</span>`;
 
         div.onclick = () => {
-          const horarioText = (m['HORARIO (DÍAS)'] || '') + ' ' + (m['HORARIO (HORAS)'] || '');
           hNrc.value = m['NRC'];
-          hDoc.value = m['Nombres y Apellidos'];
+          hDoc.value = m['Nombres y Apellidos'];  // se guarda oculto (no se muestra)
           hSec.value = m['Sección'];
 
-          // Los datos del docente/sección/horario recién aparecen al elegir
-          document.getElementById('info-docente').textContent = m['Nombres y Apellidos'] || '—';
+          // Al elegir NO se muestra el docente: solo NRC, sección y el mini horario
           document.getElementById('info-nrc').textContent = m['NRC'] || '—';
           document.getElementById('info-seccion').textContent = m['Sección'] || '—';
-          document.getElementById('info-horario').textContent = horarioText.trim() || '—';
+          buildMiniHorario(m);
 
           resSearch.style.display = 'none';
           fieldSearch.style.display = 'none';
