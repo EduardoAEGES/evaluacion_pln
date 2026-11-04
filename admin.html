@@ -527,7 +527,7 @@ body::after{
         </div>
         <div class="form-group" style="flex:1;min-width:160px">
           <label for="examPenalty" title="Puntos que se restan por cada respuesta marcada incorrecta">Penalización por error (pts)</label>
-          <input type="number" id="examPenalty" value="0" min="0" max="10" step="0.25">
+          <input type="number" id="examPenalty" value="0.5" min="0" max="10" step="0.25">
         </div>
         <div class="form-group" style="flex:1;min-width:140px">
           <label>Puntaje Total</label>
@@ -737,7 +737,7 @@ function renderExamList(){
         <div class="card-meta" style="margin-bottom:14px;">
           <span>📝 ${ex.questions ? ex.questions.length : 0} preguntas</span>
           <span>⏱ ${ex.timeMinutes || 15} min</span>
-          ${(parseFloat(ex.penaltyWrong) > 0) ? `<span title="Penalización por respuesta incorrecta">➖ -${parseFloat(ex.penaltyWrong)} por error</span>` : ''}
+          ${((ex.penaltyWrong === undefined || ex.penaltyWrong === null ? 0.5 : parseFloat(ex.penaltyWrong)) > 0) ? `<span title="Penalización por respuesta incorrecta">➖ -${(ex.penaltyWrong === undefined || ex.penaltyWrong === null) ? 0.5 : parseFloat(ex.penaltyWrong)} por error</span>` : ''}
           <span>📅 ${date}</span>
         </div>
         <div class="card-actions">
@@ -761,7 +761,7 @@ function createNewExam(){
   editorQuestions = [];
   document.getElementById('examName').value = '';
   document.getElementById('examTime').value = '15';
-  document.getElementById('examPenalty').value = '0';
+  document.getElementById('examPenalty').value = '0.5';
   document.getElementById('examPenalizeBlank').checked = false;
   document.getElementById('editorTitle').textContent = '✨ Nuevo Examen';
   document.getElementById('btnSaveExam').textContent = '💾 Guardar Examen';
@@ -778,7 +778,7 @@ function editExam(id){
   editorQuestions = JSON.parse(JSON.stringify(ex.questions || []));
   document.getElementById('examName').value = ex.name || '';
   document.getElementById('examTime').value = ex.timeMinutes || 15;
-  document.getElementById('examPenalty').value = (ex.penaltyWrong !== undefined && ex.penaltyWrong !== null) ? ex.penaltyWrong : 0;
+  document.getElementById('examPenalty').value = (ex.penaltyWrong !== undefined && ex.penaltyWrong !== null) ? ex.penaltyWrong : 0.5; // por defecto 0.5
   document.getElementById('examPenalizeBlank').checked = !!ex.penalizeBlank;
   document.getElementById('editorTitle').textContent = '✏️ Editar Examen';
   document.getElementById('btnSaveExam').textContent = '💾 Actualizar Examen';
@@ -1180,7 +1180,7 @@ function saveExam(){
   const name = document.getElementById('examName').value.trim();
   const time = parseInt(document.getElementById('examTime').value) || 15;
   let penalty = parseFloat(document.getElementById('examPenalty').value);
-  if(!isFinite(penalty) || penalty < 0) penalty = 0;
+  if(!isFinite(penalty) || penalty < 0) penalty = 0.5;
   const penalizeBlank = document.getElementById('examPenalizeBlank').checked;
 
   if(!name){ toast('Escribe un nombre para el examen','error'); return; }
