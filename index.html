@@ -462,6 +462,7 @@
   <header class="exam" style="position:relative;">
     <button id="closePreviewBtn" style="display:none; position:absolute; top:20px; right:20px; background:var(--danger); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:13px; z-index:10;" onclick="exitExam()">✕ Cerrar Vista Previa</button>
     <h1 id="examTitle">Examen · Pensamiento Lógico de Negocios</h1>
+    <div id="penaltyNote" style="display:none;color:#d97706;font-weight:700;font-size:14px;margin-top:6px"></div>
     <p>Responde todas las preguntas antes de que finalice el tiempo. El examen se enviará automáticamente al agotarse el temporizador.</p>
   </header>
 
@@ -522,6 +523,8 @@
 
   // ---- Questions ----
   let QUESTIONS = [];
+  let penaltyWrong = 0;      // puntos que se restan por respuesta incorrecta
+  let penalizeBlank = false; // si true, también penaliza preguntas en blanco
   let questionsReady = false;
   const startBtn     = document.getElementById('startBtn');
   const loadState    = document.getElementById('loadState');
@@ -606,6 +609,8 @@
             TOTAL = (defaultExam.timeMinutes || 15) * 60;
             left = TOTAL;
             examName = defaultExam.name || 'Examen · PLN';
+            penaltyWrong = Math.max(0, parseFloat(defaultExam.penaltyWrong) || 0);
+            penalizeBlank = !!defaultExam.penalizeBlank;
             supabaseConfig = data.supabase || null;
             questionsReady = true;
             
@@ -616,6 +621,16 @@
             renderQuestions();
             // Update exam title
             document.getElementById('examTitle').textContent = examName + ' (Total: ' + totalPts + ' pts)';
+            const penaltyNote = document.getElementById('penaltyNote');
+            if(penaltyNote){
+              if(penaltyWrong > 0){
+                penaltyNote.textContent = '⚠ Cada respuesta incorrecta resta ' + penaltyWrong + ' pts'
+                  + (penalizeBlank ? ' (las preguntas en blanco también restan).' : '. Dejar una pregunta en blanco no resta puntos.');
+                penaltyNote.style.display = '';
+              } else {
+                penaltyNote.style.display = 'none';
+              }
+            }
             loadState.textContent = '✅ ' + QUESTIONS.length + ' preguntas listas (examen local).';
             loadState.style.color = 'var(--ok)';
             timeEl.textContent = fmt(left);
@@ -966,6 +981,7 @@
 
     let scoreObtained = 0;
     let scoreTotal = 0;
+    let penalizadas = 0;
     const respuestas = [];
     const respuestasDetalladas = [];
 
@@ -989,14 +1005,23 @@
         const correctas = q.options.filter(o => o.correct).map(o => o.letter || '');
         isCorrect = (sels.length === correctas.length && correctas.every(c => sels.includes(c)));
       }
-      if(isCorrect) scoreObtained += pts;
+      let qScore = 0;
+      if(qType !== 'text'){
+        if(isCorrect){
+          qScore = pts;
+        } else if(penaltyWrong > 0 && (chosen !== '-' || penalizeBlank)){
+          qScore = -penaltyWrong;
+          penalizadas++;
+        }
+      }
+      scoreObtained += qScore;
       respuestas.push(chosen);
       respuestasDetalladas.push({
         pregunta: q.title || ('Pregunta ' + (i+1)),
         elegida: chosen,
         correcta: (qType === 'radio' || qType === 'checkbox') ? q.options.filter(o => o.correct).map(o => o.letter).join(',') : '',
         esCorrecta: isCorrect,
-        puntosGanados: isCorrect ? pts : 0,
+        puntosGanados: qScore,
         puntosMax: pts
       });
     });
@@ -1008,6 +1033,9 @@
     box.classList.remove('pulse');
     timeEl.classList.remove('flash');
 
+    // El puntaje final nunca baja de 0
+    if(scoreObtained < 0) scoreObtained = 0;
+    scoreObtained = Math.round(scoreObtained * 100) / 100;
     const pct = scoreTotal > 0 ? Math.round((scoreObtained/scoreTotal)*100) : 0;
     const res = document.getElementById('result');
     const badge = document.getElementById('badge');
@@ -1021,6 +1049,10 @@
     scoreTxt.style.color = col;
     
     let detMsg = auto ? 'El examen se cerró automáticamente por tiempo.' : 'Examen enviado correctamente.';
+    if(penaltyWrong > 0 && penalizadas > 0){
+      detMsg += ' Se aplicó una penalización de -' + penaltyWrong + ' pts en ' + penalizadas
+        + (penalizadas === 1 ? ' pregunta.' : ' preguntas.');
+    }
     detail.textContent = detMsg;
 
     res.classList.add('show');

@@ -525,9 +525,22 @@ body::after{
           <label for="examTime">Tiempo (minutos)</label>
           <input type="number" id="examTime" value="15" min="1" max="180">
         </div>
+        <div class="form-group" style="flex:1;min-width:160px">
+          <label for="examPenalty" title="Puntos que se restan por cada respuesta marcada incorrecta">Penalización por error (pts)</label>
+          <input type="number" id="examPenalty" value="0" min="0" max="10" step="0.25">
+        </div>
         <div class="form-group" style="flex:1;min-width:140px">
           <label>Puntaje Total</label>
           <div id="editorTotalPts" style="font-size:18px;font-weight:bold;color:var(--primary);padding-top:8px;">0 pts</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;">
+            <input type="checkbox" id="examPenalizeBlank" style="width:16px;height:16px;accent-color:var(--primary);">
+            Penalizar también las preguntas dejadas en blanco
+          </label>
+          <small style="color:var(--muted)">Por defecto, dejar una pregunta sin marcar no resta puntos. El puntaje final nunca baja de 0.</small>
         </div>
       </div>
     </div>
@@ -724,6 +737,7 @@ function renderExamList(){
         <div class="card-meta" style="margin-bottom:14px;">
           <span>📝 ${ex.questions ? ex.questions.length : 0} preguntas</span>
           <span>⏱ ${ex.timeMinutes || 15} min</span>
+          ${(parseFloat(ex.penaltyWrong) > 0) ? `<span title="Penalización por respuesta incorrecta">➖ -${parseFloat(ex.penaltyWrong)} por error</span>` : ''}
           <span>📅 ${date}</span>
         </div>
         <div class="card-actions">
@@ -747,6 +761,8 @@ function createNewExam(){
   editorQuestions = [];
   document.getElementById('examName').value = '';
   document.getElementById('examTime').value = '15';
+  document.getElementById('examPenalty').value = '0';
+  document.getElementById('examPenalizeBlank').checked = false;
   document.getElementById('editorTitle').textContent = '✨ Nuevo Examen';
   document.getElementById('btnSaveExam').textContent = '💾 Guardar Examen';
   addQuestion(); // start with one empty question
@@ -762,6 +778,8 @@ function editExam(id){
   editorQuestions = JSON.parse(JSON.stringify(ex.questions || []));
   document.getElementById('examName').value = ex.name || '';
   document.getElementById('examTime').value = ex.timeMinutes || 15;
+  document.getElementById('examPenalty').value = (ex.penaltyWrong !== undefined && ex.penaltyWrong !== null) ? ex.penaltyWrong : 0;
+  document.getElementById('examPenalizeBlank').checked = !!ex.penalizeBlank;
   document.getElementById('editorTitle').textContent = '✏️ Editar Examen';
   document.getElementById('btnSaveExam').textContent = '💾 Actualizar Examen';
   renderEditorQuestions();
@@ -1161,6 +1179,9 @@ window.dropQ = dropQ;
 function saveExam(){
   const name = document.getElementById('examName').value.trim();
   const time = parseInt(document.getElementById('examTime').value) || 15;
+  let penalty = parseFloat(document.getElementById('examPenalty').value);
+  if(!isFinite(penalty) || penalty < 0) penalty = 0;
+  const penalizeBlank = document.getElementById('examPenalizeBlank').checked;
 
   if(!name){ toast('Escribe un nombre para el examen','error'); return; }
   if(!editorQuestions.length){ toast('Agrega al menos una pregunta','error'); return; }
@@ -1192,6 +1213,8 @@ function saveExam(){
     if(idx >= 0){
       DATA.exams[idx].name = name;
       DATA.exams[idx].timeMinutes = time;
+      DATA.exams[idx].penaltyWrong = penalty;
+      DATA.exams[idx].penalizeBlank = penalizeBlank;
       DATA.exams[idx].questions = JSON.parse(JSON.stringify(editorQuestions));
       DATA.exams[idx].updatedAt = new Date().toISOString();
     }
@@ -1202,6 +1225,8 @@ function saveExam(){
       id: uuid(),
       name: name,
       timeMinutes: time,
+      penaltyWrong: penalty,
+      penalizeBlank: penalizeBlank,
       isDefault: isFirst, // first exam is default
       createdAt: new Date().toISOString(),
       questions: JSON.parse(JSON.stringify(editorQuestions))
