@@ -737,7 +737,7 @@ function renderExamList(){
         <div class="card-meta" style="margin-bottom:14px;">
           <span>📝 ${ex.questions ? ex.questions.length : 0} preguntas</span>
           <span>⏱ ${ex.timeMinutes || 15} min</span>
-          ${((ex.penaltyWrong === undefined || ex.penaltyWrong === null ? 0.5 : parseFloat(ex.penaltyWrong)) > 0) ? `<span title="Penalización por respuesta incorrecta">➖ -${(ex.penaltyWrong === undefined || ex.penaltyWrong === null) ? 0.5 : parseFloat(ex.penaltyWrong)} por error</span>` : ''}
+          ${(examPenalty(ex) > 0) ? `<span title="Penalización por respuesta incorrecta">➖ -${examPenalty(ex)} por error</span>` : ''}
           <span>📅 ${date}</span>
         </div>
         <div class="card-actions">
@@ -756,6 +756,13 @@ window.renderExamList = renderExamList;
 // =====================================================================
 //  EXAM ACTIONS
 // =====================================================================
+// Penalización efectiva: los exámenes guardados antes de la v2 (sin penaltyV2) usan -0.5 por defecto
+function examPenalty(ex){
+  if(!ex || !ex.penaltyV2) return 0.5;
+  const v = parseFloat(ex.penaltyWrong);
+  return isFinite(v) && v >= 0 ? v : 0.5;
+}
+
 function createNewExam(){
   editingExamId = null;
   editorQuestions = [];
@@ -778,7 +785,7 @@ function editExam(id){
   editorQuestions = JSON.parse(JSON.stringify(ex.questions || []));
   document.getElementById('examName').value = ex.name || '';
   document.getElementById('examTime').value = ex.timeMinutes || 15;
-  document.getElementById('examPenalty').value = (ex.penaltyWrong !== undefined && ex.penaltyWrong !== null) ? ex.penaltyWrong : 0.5; // por defecto 0.5
+  document.getElementById('examPenalty').value = examPenalty(ex);
   document.getElementById('examPenalizeBlank').checked = !!ex.penalizeBlank;
   document.getElementById('editorTitle').textContent = '✏️ Editar Examen';
   document.getElementById('btnSaveExam').textContent = '💾 Actualizar Examen';
@@ -1214,6 +1221,7 @@ function saveExam(){
       DATA.exams[idx].name = name;
       DATA.exams[idx].timeMinutes = time;
       DATA.exams[idx].penaltyWrong = penalty;
+      DATA.exams[idx].penaltyV2 = true;
       DATA.exams[idx].penalizeBlank = penalizeBlank;
       DATA.exams[idx].questions = JSON.parse(JSON.stringify(editorQuestions));
       DATA.exams[idx].updatedAt = new Date().toISOString();
@@ -1226,6 +1234,7 @@ function saveExam(){
       name: name,
       timeMinutes: time,
       penaltyWrong: penalty,
+      penaltyV2: true,
       penalizeBlank: penalizeBlank,
       isDefault: isFirst, // first exam is default
       createdAt: new Date().toISOString(),

@@ -610,7 +610,7 @@
             left = TOTAL;
             examName = defaultExam.name || 'Examen · PLN';
             // Si el examen no tiene el campo configurado, se aplica -0.5 por defecto (0 = sin penalización)
-            { const pw = parseFloat(defaultExam.penaltyWrong); penaltyWrong = isFinite(pw) ? Math.max(0, pw) : 0.5; }
+            { const pw = parseFloat(defaultExam.penaltyWrong); penaltyWrong = (defaultExam.penaltyV2 && isFinite(pw)) ? Math.max(0, pw) : 0.5; }
             penalizeBlank = !!defaultExam.penalizeBlank;
             supabaseConfig = data.supabase || null;
             questionsReady = true;
