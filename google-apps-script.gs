@@ -103,35 +103,69 @@ function doPost(e) {
     
     var hoja = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
 
-    if (hoja.getLastRow() === 0) {
-      var headers = [
-        'Fecha', 'Nombres', 'Apellidos', 'NRC',
-        'Aciertos', 'Total', 'Porcentaje', 'Enviado'
-      ];
-      
-      if (d.respuestasDetalladas && d.respuestasDetalladas.length > 0) {
-        for (var i = 0; i < d.respuestasDetalladas.length; i++) {
-          var p = d.respuestasDetalladas[i];
-          var titulo = p.pregunta || ('P' + (i+1));
-          headers.push(titulo + ' (Respuesta)');
-          headers.push(titulo + ' (Bien/Mal)');
-        }
-      }
-      hoja.appendRow(headers);
-      hoja.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+    // --- Encabezados existentes (si la hoja ya tiene datos) ---
+    var headers = [];
+    if (hoja.getLastRow() > 0) {
+      headers = hoja.getRange(1, 1, 1, Math.max(1, hoja.getLastColumn())).getValues()[0]
+        .map(function (h) { return String(h).trim(); });
+      while (headers.length && headers[headers.length - 1] === '') headers.pop();
     }
 
-    var rowData = [
-      d.fecha, d.nombres, d.apellidos, d.nrc,
-      d.aciertos, d.total, d.porcentaje + '%', d.enviado
+    var indexOfHeader = {};
+    for (var h = 0; h < headers.length; h++) indexOfHeader[headers[h]] = h;
+
+    // Compatibilidad con hojas antiguas que usaban 'Aciertos' / 'Total'
+    var hObtenido = (indexOfHeader['Aciertos'] !== undefined) ? 'Aciertos' : 'Puntaje Obtenido';
+    var hTotal = (indexOfHeader['Total'] !== undefined) ? 'Total' : 'Puntaje Total';
+
+    // --- Construir pares [encabezado, valor] para esta fila ---
+    var pares = [
+      ['Fecha', d.fecha],
+      ['Nombres', d.nombres],
+      ['Apellidos', d.apellidos],
+      ['NRC', d.nrc],
+      ['Docente', d.docente || ''],
+      ['Secci\u00f3n', d.seccion || ''],
+      [hObtenido, d.aciertos],
+      [hTotal, d.total],
+      ['Porcentaje', d.porcentaje + '%'],
+      ['Penalizaci\u00f3n por error', (d.penalizacion || 0)],
+      ['Preguntas penalizadas', (d.penalizadas || 0)],
+      ['Enviado', d.enviado]
     ];
-    
+
     if (d.respuestasDetalladas && d.respuestasDetalladas.length > 0) {
       for (var i = 0; i < d.respuestasDetalladas.length; i++) {
         var p = d.respuestasDetalladas[i];
-        rowData.push(p.elegida);
-        rowData.push(p.esCorrecta ? 'Bien' : 'Mal');
+        var titulo = p.pregunta || ('P' + (i + 1));
+        pares.push([titulo + ' (Respuesta)', p.elegida]);
+        pares.push([titulo + ' (Bien/Mal)', p.esCorrecta ? 'Bien' : 'Mal']);
+        pares.push([titulo + ' (Puntaje)', (p.puntosGanados === undefined || p.puntosGanados === null) ? '' : p.puntosGanados]);
+        pares.push([titulo + ' (Puntaje M\u00e1x)', (p.puntosMax === undefined || p.puntosMax === null) ? '' : p.puntosMax]);
       }
+    }
+
+    // --- Se reutilizan los encabezados existentes y se agregan los que falten ---
+    var nuevos = [];
+    for (var k = 0; k < pares.length; k++) {
+      var nombre = pares[k][0];
+      if (indexOfHeader[nombre] === undefined) {
+        indexOfHeader[nombre] = headers.length;
+        headers.push(nombre);
+        nuevos.push(nombre);
+      }
+    }
+
+    if (nuevos.length > 0) {
+      hoja.getRange(1, 1, 1, headers.length).setValues([headers]);
+      hoja.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#f3f3f3');
+    }
+
+    // --- Fila alineada a los encabezados ---
+    var rowData = [];
+    for (var c = 0; c < headers.length; c++) rowData.push('');
+    for (var k2 = 0; k2 < pares.length; k2++) {
+      rowData[indexOfHeader[pares[k2][0]]] = pares[k2][1];
     }
 
     hoja.appendRow(rowData);

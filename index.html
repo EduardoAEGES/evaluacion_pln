@@ -1064,6 +1064,10 @@
       nombres: (form.querySelector('[name="nombres"]').value || '').trim() || 'Sin nombre',
       apellidos: (form.querySelector('[name="apellidos"]').value || '').trim() || 'Sin apellido',
       nrc: (form.querySelector('[name="nrc"]').value || '').trim() || 'Sin NRC',
+      docente: ((form.querySelector('[name="docente"]') || {}).value || '').trim() || 'Sin docente',
+      seccion: ((form.querySelector('[name="seccion"]') || {}).value || '').trim() || 'Sin sección',
+      penalizacion: penaltyWrong,
+      penalizadas: penalizadas,
       respuestas: respuestas,
       respuestasDetalladas: respuestasDetalladas,
       aciertos: scoreObtained,
@@ -1100,7 +1104,7 @@
     try {
       const supabaseUrlFixed = SUPABASE_URL.replace(/\/rest\/v1\/?$/, '');
       const sb = window.supabase.createClient(supabaseUrlFixed, SUPABASE_KEY);
-      sb.from('resultados_examenes').insert({
+      const baseRow = {
         examen_nombre: data.examName,
         nombres: data.nombres,
         apellidos: data.apellidos,
@@ -1109,10 +1113,21 @@
         puntaje_total: data.total,
         porcentaje: data.porcentaje,
         respuestas: data.respuestasDetalladas
-      })
+      };
+      // Columnas opcionales: si no existen en la tabla, se reintenta sin ellas.
+      const fullRow = Object.assign({}, baseRow, {
+        docente: data.docente,
+        seccion: data.seccion,
+        penalizacion: data.penalizacion
+      });
+      sb.from('resultados_examenes').insert(fullRow)
       .then(({error}) => {
-        if(!error) detailEl.textContent += ' ☁️ Respaldo guardado.';
-        else { console.error('Supabase save error', error); detailEl.textContent += ' ⚠️ Error en respaldo.'; }
+        if(!error){ detailEl.textContent += ' ☁️ Respaldo guardado.'; return; }
+        console.warn('Supabase save error (reintento sin columnas nuevas)', error);
+        sb.from('resultados_examenes').insert(baseRow).then(({error: err2}) => {
+          if(!err2) detailEl.textContent += ' ☁️ Respaldo guardado.';
+          else { console.error('Supabase save error', err2); detailEl.textContent += ' ⚠️ Error en respaldo.'; }
+        });
       });
     } catch(err) {
       console.error('Supabase init error', err);
